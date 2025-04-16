@@ -1,125 +1,65 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Inventory Catalogue</title>
+  <title>Inventory Login</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      width: 90%;
-      margin: auto;
-      padding-top: 40px;
-    }
-    .item {
+      font-family: Arial;
+      background: #f0f0f0;
       display: flex;
+      height: 100vh;
+      justify-content: center;
       align-items: center;
-      margin-bottom: 25px;
-      background-color: #fff;
+    }
+    .login-box {
+      background: white;
+      padding: 30px;
       border-radius: 10px;
-      padding: 15px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
     }
-    .item img {
-      width: 120px;
-      height: 120px;
-      object-fit: contain;
-      margin-right: 20px;
+    input {
+      display: block;
+      width: 100%;
+      margin-bottom: 15px;
+      padding: 10px;
+      font-size: 16px;
     }
-    .item-details h2 {
-      margin: 0;
-      font-size: 20px;
+    button {
+      padding: 10px;
+      width: 100%;
+      background: #4CAF50;
+      color: white;
+      font-size: 16px;
+      border: none;
+      cursor: pointer;
+    }
+    #error {
+      color: red;
+      font-weight: bold;
+      display: none;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Inventory Catalogue</h1>
-
-    <div class="item">
-      <img src="images/114238.png" alt="Item 114238">
-      <div class="item-details">
-        <h2>Item 114238</h2>
-        <p><strong>Category:</strong> Category A</p>
-        <p><strong>Price:</strong> $X.XX</p>
-        <p><strong>Stock:</strong> 100 units</p>
-      </div>
-    </div>
-
-    <div class="item">
-      <img src="images/114239.png" alt="Item 114239">
-      <div class="item-details">
-        <h2>Item 114239</h2>
-        <p><strong>Category:</strong> Category B</p>
-        <p><strong>Price:</strong> $X.XX</p>
-        <p><strong>Stock:</strong> 80 units</p>
-      </div>
-    </div>
-
-    <div class="item">
-      <img src="images/114240.png" alt="Item 114240">
-      <div class="item-details">
-        <h2>Item 114240</h2>
-        <p><strong>Category:</strong> Category C</p>
-        <p><strong>Price:</strong> $X.XX</p>
-        <p><strong>Stock:</strong> 60 units</p>
-      </div>
-    </div>
-
-    <div class="item">
-      <img src="images/114241.png" alt="Item 114241">
-      <div class="item-details">
-        <h2>Item 114241</h2>
-        <p><strong>Category:</strong> Category D</p>
-        <p><strong>Price:</strong> $X.XX</p>
-        <p><strong>Stock:</strong> 90 units</p>
-      </div>
-    </div>
-
-    <div class="item">
-      <img src="images/114242.png" alt="Item 114242">
-      <div class="item-details">
-        <h2>Item 114242</h2>
-        <p><strong>Category:</strong> Category A</p>
-        <p><strong>Price:</strong> $X.XX</p>
-        <p><strong>Stock:</strong> 120 units</p>
-      </div>
-    </div>
-
-    <div class="item">
-      <img src="images/114243.png" alt="Item 114243">
-      <div class="item-details">
-        <h2>Item 114243</h2>
-        <p><strong>Category:</strong> Category B</p>
-        <p><strong>Price:</strong> $X.XX</p>
-        <p><strong>Stock:</strong> 50 units</p>
-      </div>
-    </div>
-
-    <div class="item">
-      <img src="images/114244.png" alt="Item 114244">
-      <div class="item-details">
-        <h2>Item 114244</h2>
-        <p><strong>Category:</strong> Category C</p>
-        <p><strong>Price:</strong> $X.XX</p>
-        <p><strong>Stock:</strong> 70 units</p>
-      </div>
-    </div>
-
-    <div class="item">
-      <img src="images/114245.png" alt="Item 114245">
-      <div class="item-details">
-        <h2>Item 114245</h2>
-        <p><strong>Category:</strong> Category D</p>
-        <p><strong>Price:</strong> $X.XX</p>
-        <p><strong>Stock:</strong> 30 units</p>
-      </div>
-    </div>
-
+  <div class="login-box">
+    <h2>Login to View Catalogue</h2>
+    <input type="text" id="username" placeholder="Username" />
+    <input type="password" id="password" placeholder="Password" />
+    <button onclick="login()">Login</button>
+    <p id="error">Invalid credentials. Contact the administrator.</p>
   </div>
+
+  <script>
+    function login() {
+      const user = document.getElementById("username").value;
+      const pass = document.getElementById("password").value;
+      if (user === "inventory" && pass === "134679") {
+        window.location.href = "index.html";
+      } else {
+        document.getElementById("error").style.display = "block";
+      }
+    }
+  </script>
 </body>
 </html>
