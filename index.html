@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Inventory Catalogue</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -68,7 +68,6 @@
       height: 100px;
       display: none;
       pointer-events: none;
-      background: rgba(255, 255, 255, 0.3);
     }
 
     .zoom-result {
@@ -78,19 +77,15 @@
       width: 250px;
       height: 250px;
       top: 0;
+      left: 230px;
       background-repeat: no-repeat;
+      background-size: 400% 400%;
       z-index: 1000;
     }
 
     .low-stock {
       color: red;
       font-weight: bold;
-    }
-
-    .error-message {
-      color: red;
-      text-align: center;
-      margin: 20px;
     }
   </style>
 </head>
@@ -106,7 +101,6 @@
 </div>
 
 <div id="item-container" class="item-container"></div>
-<div id="error-message" class="error-message" style="display: none;"></div>
 
 <script>
   let inventoryItems = [];
@@ -117,18 +111,9 @@
       header: true,
       dynamicTyping: true,
       complete: function(results) {
-        if (results.errors.length > 0 || !results.data) {
-          document.getElementById('error-message').textContent = 'Error loading inventory data. Please check the CSV file.';
-          document.getElementById('error-message').style.display = 'block';
-          return;
-        }
-        inventoryItems = results.data.filter(item => item['Item Description'] && item['Item Code']); // Ensure valid items
+        inventoryItems = results.data;
         populateCategoryFilter();
         displayItems(inventoryItems);
-      },
-      error: function() {
-        document.getElementById('error-message').textContent = 'Failed to load inventory data. Please check the CSV file or network connection.';
-        document.getElementById('error-message').style.display = 'block';
       }
     });
   }
@@ -141,75 +126,49 @@
       const div = document.createElement('div');
       div.className = 'item';
 
-      const imagePath = `images/${item['Image Filename'] || 'default.jpg'}`;
-
-      // Format price safely
-      const price = typeof item['Price'] === 'number' && !isNaN(item['Price'])
-        ? `AED ${parseFloat(item['Price']).toFixed(2)}`
-        : 'AED N/A';
+      const imagePath = `images/${item['Image Filename']}`;
 
       div.innerHTML = `
         <div class="item-image-container">
-          <img src="${imagePath}" alt="${item['Item Description'] || 'Item'}" class="zoomable" />
-          <div class="zoom-lens"></div>
+          <img src="${imagePath}" alt="${item['Item Description']}" class="zoomable" />
           <div class="zoom-result"></div>
         </div>
-        <h3>${item['Item Description'] || 'Unknown Item'}</h3>
-        <p>Code: ${item['Item Code'] || 'N/A'}</p>
-        <p>Price: ${price}</p>
-        <p>Category: ${item['Category'] || 'Uncategorized'}</p>
+        <h3>${item['Item Description']}</h3>
+        <p>Code: ${item['Item Code']}</p>
+        <p>Price: AED ${parseFloat(item['Price']).toFixed(2)}</p>
+        <p>Category: ${item['Category']}</p>
       `;
 
       container.appendChild(div);
 
       // Add zoom functionality
-      const img = div.querySelector('img');
-      const zoomLens = div.querySelector('.zoom-lens');
-      const zoomResult = div.querySelector('.zoom-result');
-      const magnification = 3; // 3x zoom
+      const img = div.querySelector("img");
+      const zoomResult = div.querySelector(".zoom-result");
 
-      img.addEventListener('mouseenter', () => {
-        zoomLens.style.display = 'block';
-        zoomResult.style.display = 'block';
+      img.addEventListener("mouseenter", () => {
+        zoomResult.style.display = "block";
         zoomResult.style.backgroundImage = `url('${imagePath}')`;
-        // Set dynamic background size for zoom
-        zoomResult.style.backgroundSize = `${img.naturalWidth * magnification}px ${img.naturalHeight * magnification}px`;
-        // Position zoom-result to the right of the image
-        const bounds = img.getBoundingClientRect();
-        const spaceRight = window.innerWidth - bounds.right;
-        zoomResult.style.left = spaceRight > 260 ? `${bounds.width + 10}px` : '-260px'; // Place left if not enough space
       });
 
-      img.addEventListener('mousemove', (e) => {
+      img.addEventListener("mousemove", (e) => {
         const bounds = img.getBoundingClientRect();
-        const x = e.clientX - bounds.left;
-        const y = e.clientY - bounds.top;
-
-        // Restrict lens to image bounds
-        const lensSize = 100;
-        const halfLens = lensSize / 2;
-        const posX = Math.max(halfLens, Math.min(x, bounds.width - halfLens));
-        const posY = Math.max(halfLens, Math.min(y, bounds.height - halfLens));
-
-        // Position lens
-        zoomLens.style.left = `${posX - halfLens}px`;
-        zoomLens.style.top = `${posY - halfLens}px`;
-
-        // Calculate zoom background position
-        const percentX = (posX / bounds.width) * 100;
-        const percentY = (posY / bounds.height) * 100;
+        const x = e.pageX - bounds.left - window.scrollX;
+        const y = e.pageY - bounds.top - window.scrollY;
+        const percentX = x / img.offsetWidth * 100;
+        const percentY = y / img.offsetHeight * 100;
         zoomResult.style.backgroundPosition = `${percentX}% ${percentY}%`;
+        zoomResult.style.top = "0";
+        zoomResult.style.left = "230px";
       });
 
-      img.addEventListener('mouseleave', () => {
-        zoomLens.style.display = 'none';
-        zoomResult.style.display = 'none';
+      img.addEventListener("mouseleave", () => {
+        zoomResult.style.display = "none";
       });
     });
   }
 
   function populateCategoryFilter() {
-    const categories = [...new Set(inventoryItems.map(item => item['Category']).filter(Boolean))].sort();
+    const categories = [...new Set(inventoryItems.map(item => item['Category']))].sort();
     const select = document.getElementById('category-filter');
     categories.forEach(cat => {
       const opt = document.createElement('option');
@@ -225,10 +184,10 @@
 
     const filtered = inventoryItems.filter(item => {
       const inSearch =
-        (item['Item Description'] || '').toLowerCase().includes(search) ||
-        (item['Item Code'] || '').toLowerCase().includes(search) ||
-        (item['Category'] || '').toLowerCase().includes(search);
-      const inCategory = category ? (item['Category'] || '') === category : true;
+        item['Item Description'].toLowerCase().includes(search) ||
+        item['Item Code'].toLowerCase().includes(search) ||
+        item['Category'].toLowerCase().includes(search);
+      const inCategory = category ? item['Category'] === category : true;
       return inSearch && inCategory;
     });
 
