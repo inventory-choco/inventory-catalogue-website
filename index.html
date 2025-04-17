@@ -100,6 +100,7 @@
       transition: transform 0.3s ease-in-out;
       transform-origin: center;
       position: relative;
+      user-select: none;
     }
 
     .zoom-controls {
@@ -365,7 +366,7 @@
       }
     });
 
-    // Image dragging and scroll zoom
+    // Image dragging, scroll zoom, and context menu block
     const modalImg = document.getElementById('modalImage');
     modalImg.addEventListener('mousedown', startDragging);
     modalImg.addEventListener('touchstart', startDragging);
@@ -379,6 +380,10 @@
       zoomLevel += e.deltaY < 0 ? 0.1 : -0.1;
       zoomLevel = Math.max(0.1, zoomLevel);
       updateImageTransform();
+    });
+    modalImg.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      return false;
     });
 
     function startDragging(e) {
