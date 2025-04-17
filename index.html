@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inventory Catalogue</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -88,7 +87,6 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      cursor: pointer;
     }
 
     .modal-content {
@@ -165,7 +163,7 @@
       }
       .zoom-controls {
         flex-direction: column;
-        gap: 10px;
+        gap: (hdr) 10px;
       }
     }
   </style>
@@ -174,8 +172,8 @@
   <h1>Inventory Catalogue</h1>
 
   <div id="controls">
-    <input type="text" id="search-bar" placeholder="Search items..." aria-label="Search items" />
-    <select id="category-filter" aria-label="Filter by category">
+    <input type="text" id="search-bar" placeholder="Search items..." oninput="filterItems()"/>
+    <select id="category-filter" onchange="filterItems()">
       <option value="">All Categories</option>
     </select>
   </div>
@@ -184,176 +182,159 @@
   <div id="error-message" class="error-message"></div>
 
   <!-- Modal for Image Preview -->
-  <div id="imageModal" class="modal" role="dialog" aria-label="Image preview modal">
-    <span class="close" onclick="closeModal()" aria-label="Close modal">×</span>
+  <div id="imageModal" class="modal" onclick="closeModal()">
+    <span class="close" onclick="closeModal()">×</span>
     <div class="zoom-controls">
-      <button onclick="zoomIn(event)" aria-label="Zoom in">🔍➕ Zoom In</button>
-      <button onclick="zoomOut(event)" aria-label="Zoom out">🔍➖ Zoom Out</button>
-      <button onclick="resetZoom(event)" aria-label="Reset zoom">🔄 Reset</button>
+      <button onclick="zoomIn(event)">🔍➕ Zoom In</button>
+      <button onclick="zoomOut(event)">🔍➖ Zoom Out</button>
+      <button onclick="resetZoom(event)">🔄 Reset</button>
     </div>
     <div class="modal-content-wrapper" onclick="closeModal()">
-      <img class="modal-content" id="modalImage" onclick="event.stopPropagation()" alt="Preview image" />
+      <img class="modal-content" id="modalImage" onclick="event.stopPropagation()" />
     </div>
   </div>
 
-<script>
-  let allItems = [];
-  let zoomLevel = 1;
-  let zoomClickCount = 0;
-  let modalOpen = false;
-  let startY = 0;
-  let endY = 0;
+  <script>
+    let allItems = [];
+    let zoomLevel = 1;
+    let zoomClickCount = 0;
+    let modalOpen = false;
+    let startY = 0;
+    let endY = 0;
 
-  function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-  }
-
-  function loadCSV() {
-    Papa.parse('inventory_data.csv', {
-      download: true,
-      header: true,
-      dynamicTyping: true,
-      complete: function(results) {
-        if (results.errors.length > 0 || !results.data) {
-          showError('Error loading inventory data. Please check the CSV file.');
-          return;
-        }
-        allItems = results.data.filter(item => item['Item Description'] && item['Item Code']);
+    fetch('inventory_data.csv')
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to load CSV');
+        return response.text();
+      })
+      .then(csv => {
+        const lines = csv.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        allItems = lines.slice(1).map(line => {
+          const data = line.split(',').map(d => d.trim());
+          let obj = {};
+          headers.forEach((h, i) => obj[h] = data[i] || '');
+          return obj;
+        }).filter(item => item['Item Description'] && item['Item Code']);
         populateCategories();
         const categoryFilter = document.getElementById('category-filter');
         categoryFilter.value = allItems.some(item => item.Category === 'ITALIAN - WRAPPED')
           ? 'ITALIAN - WRAPPED'
           : '';
         filterItems();
-      },
-      error: function() {
-        showError('Failed to load inventory data. Please check the CSV file or network connection.');
+      })
+      .catch(error => {
+        document.getElementById('error-message').textContent = 'Error loading inventory data. Please check the CSV file.';
+        document.getElementById('error-message').style.display = 'block';
+      });
+
+    function populateCategories() {
+      const categoryFilter = document.getElementById('category-filter');
+      const categories = [...new Set(allItems.map(item => item.Category).filter(Boolean))].sort();
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        categoryFilter.appendChild(option);
+      });
+    }
+
+    function displayItems(items) {
+      const container = document.getElementById('items-container');
+      container.innerHTML = '';
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'item-card';
+
+        const imageFile = item['Image Filename'] || 'default.jpg';
+        const imagePath = `images/${imageFile}`;
+
+        const price = item['Price'] && !isNaN(parseFloat(item['Price']))
+          ? `AED ${parseFloat(item['Price']).toFixed(2)}`
+          : 'AED N/A';
+
+        card.innerHTML = `
+          <img src="${imagePath}" loading="lazy" alt="${item['Item Description'] || 'Item'}" onclick="openModal('${imagePath}')" oncontextmenu="return false" />
+          <h3>${item['Item Description'] || 'Unknown Item'}</h3>
+          <p><strong>Code:</strong> ${item['Item Code'] || 'N/A'}</p>
+          <p><strong>Category:</strong> ${item['Category'] || 'Uncategorized'}</p>
+          <p><strong>Price:</strong> ${price}</p>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function filterItems() {
+      const searchTerm = document.getElementById('search-bar').value.toLowerCase();
+      const selectedCategory = document.getElementById('category-filter').value;
+
+      const filtered = allItems.filter(item => {
+        const matchesCategory = selectedCategory ? item.Category === selectedCategory : true;
+        const matchesSearch = Object.values(item).some(value =>
+          (value || '').toLowerCase().includes(searchTerm)
+        );
+        return matchesCategory && matchesSearch;
+      });
+
+      displayItems(filtered);
+    }
+
+    function openModal(imageSrc) {
+      zoomLevel = 1;
+      zoomClickCount = 0;
+      modalOpen = true;
+      history.pushState({ modal: true }, '');
+      const modal = document.getElementById('imageModal');
+      const modalImg = document.getElementById('modalImage');
+      modalImg.style.transform = `scale(${zoomLevel})`;
+      modal.style.display = 'block';
+      modalImg.src = imageSrc;
+    }
+
+    function closeModal() {
+      zoomLevel = 1;
+      zoomClickCount = 0;
+      modalOpen = false;
+      document.getElementById('imageModal').style.display = 'none';
+    }
+
+    function zoomIn(event) {
+      event.stopPropagation();
+      zoomClickCount++;
+      zoomLevel += 0.2 + 0.05 * zoomClickCount;
+      document.getElementById('modalImage').style.transform = `scale(${zoomLevel})`;
+    }
+
+    function zoomOut(event) {
+      event.stopPropagation();
+      zoomClickCount++;
+      zoomLevel = Math.max(0.1, zoomLevel - (0.2 + 0.05 * zoomClickCount));
+      document.getElementById('modalImage').style.transform = `scale(${zoomLevel})`;
+    }
+
+    function resetZoom(event) {
+      event.stopPropagation();
+      zoomLevel = 1;
+      zoomClickCount = 0;
+      document.getElementById('modalImage').style.transform = `scale(${zoomLevel})`;
+    }
+
+    window.addEventListener('popstate', function (event) {
+      if (modalOpen && event.state && event.state.modal) {
+        closeModal();
       }
     });
-  }
 
-  function showError(message) {
-    const errorDiv = document.getElementById('error-message');
-    errorDiv.textContent = message;
-    errorDiv.style.display = 'block';
-  }
-
-  function populateCategories() {
-    const categoryFilter = document.getElementById('category-filter');
-    const categories = [...new Set(allItems.map(item => item.Category).filter(Boolean))].sort();
-    categories.forEach(cat => {
-      const option = document.createElement('option');
-      option.value = cat;
-      option.textContent = cat;
-      categoryFilter.appendChild(option);
+    const modalWrapper = document.querySelector('.modal-content-wrapper');
+    modalWrapper.addEventListener('touchstart', e => {
+      startY = e.changedTouches[0].screenY;
     });
-  }
-
-  function displayItems(items) {
-    const container = document.getElementById('items-container');
-    container.innerHTML = '';
-    items.forEach(item => {
-      const card = document.createElement('div');
-      card.className = 'item-card';
-
-      const imageFile = item['Image Filename'] || 'default.jpg';
-      const imagePath = `images/${imageFile}`;
-
-      const price = typeof item['Price'] === 'number' && !isNaN(item['Price'])
-        ? `AED ${parseFloat(item['Price']).toFixed(2)}`
-        : 'AED N/A';
-
-      card.innerHTML = `
-        <img src="${imagePath}" loading="lazy" alt="${item['Item Description'] || 'Item'}" onclick="openModal('${imagePath}')" oncontextmenu="return false" />
-        <h3>${item['Item Description'] || 'Unknown Item'}</h3>
-        <p><strong>Code:</strong> ${item['Item Code'] || 'N/A'}</p>
-        <p><strong>Category:</strong> ${item['Category'] || 'Uncategorized'}</p>
-        <p><strong>Price:</strong> ${price}</p>
-      `;
-      container.appendChild(card);
+    modalWrapper.addEventListener('touchend', e => {
+      endY = e.changedTouches[0].screenY;
+      if (Math.abs(endY - startY) > 150) {
+        closeModal();
+      }
     });
-  }
-
-  function filterItems() {
-    const searchTerm = document.getElementById('search-bar').value.toLowerCase();
-    const selectedCategory = document.getElementById('category-filter').value;
-
-    const filtered = allItems.filter(item => {
-      const matchesCategory = selectedCategory ? item.Category === selectedCategory : true;
-      const matchesSearch = Object.values(item).some(value =>
-        (value || '').toString().toLowerCase().includes(searchTerm)
-      );
-      return matchesCategory && matchesSearch;
-    });
-
-    displayItems(filtered);
-  }
-
-  function openModal(imageSrc) {
-    zoomLevel = 1;
-    zoomClickCount = 0;
-    modalOpen = true;
-    history.pushState({ modal: true }, '');
-    const modal = document.getElementById('imageModal');
-    const modalImg = document.getElementById('modalImage');
-    modalImg.style.transform = `scale(${zoomLevel})`;
-    modal.style.display = 'block';
-    modalImg.src = imageSrc;
-  }
-
-  function closeModal() {
-    zoomLevel = 1;
-    zoomClickCount = 0;
-    modalOpen = false;
-    document.getElementById('imageModal').style.display = 'none';
-  }
-
-  function zoomIn(event) {
-    event.stopPropagation();
-    zoomClickCount++;
-    zoomLevel += 0.2 + 0.05 * zoomClickCount;
-    document.getElementById('modalImage').style.transform = `scale(${zoomLevel})`;
-  }
-
-  function zoomOut(event) {
-    event.stopPropagation();
-    zoomClickCount++;
-    zoomLevel = Math.max(0.1, zoomLevel - (0.2 + 0.05 * zoomClickCount));
-    document.getElementById('modalImage').style.transform = `scale(${zoomLevel})`;
-  }
-
-  function resetZoom(event) {
-    event.stopPropagation();
-    zoomLevel = 1;
-    zoomClickCount = 0;
-    document.getElementById('modalImage').style.transform = `scale(${zoomLevel})`;
-  }
-
-  window.addEventListener('popstate', function (event) {
-    if (modalOpen && event.state && event.state.modal) {
-      closeModal();
-    }
-  });
-
-  const modalWrapper = document.querySelector('.modal-content-wrapper');
-  modalWrapper.addEventListener('touchstart', e => {
-    startY = e.changedTouches[0].screenY;
-  });
-  modalWrapper.addEventListener('touchend', e => {
-    endY = e.changedTouches[0].screenY;
-    if (Math.abs(endY - startY) > 150) {
-      closeModal();
-    }
-  });
-
-  // Event listeners
-  document.getElementById('search-bar').addEventListener('input', debounce(filterItems, 300));
-  document.getElementById('category-filter').addEventListener('change', filterItems);
-  window.onload = loadCSV;
-</script>
+  </script>
 </body>
 </html>
