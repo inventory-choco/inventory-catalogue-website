@@ -97,6 +97,7 @@
       cursor: grab;
       transition: transform 0.3s ease-in-out;
       transform-origin: center;
+      position: relative;
     }
 
     .zoom-controls {
@@ -163,7 +164,7 @@
       }
       .zoom-controls {
         flex-direction: column;
-        gap: (hdr) 10px;
+        gap: 10px;
       }
     }
   </style>
@@ -201,6 +202,11 @@
     let modalOpen = false;
     let startY = 0;
     let endY = 0;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let imageX = 0;
+    let imageY = 0;
 
     fetch('inventory_data.csv')
       .then(response => {
@@ -269,11 +275,11 @@
       const selectedCategory = document.getElementById('category-filter').value;
 
       const filtered = allItems.filter(item => {
-        const matchesCategory = selectedCategory ? item.Category === selectedCategory : true;
-        const matchesSearch = Object.values(item).some(value =>
-          (value || '').toLowerCase().includes(searchTerm)
-        );
-        return matchesCategory && matchesSearch;
+        const matchesSearch = searchTerm
+          ? Object.values(item).some(value => (value || '').toLowerCase().includes(searchTerm))
+          : true;
+        const matchesCategory = searchTerm ? true : selectedCategory ? item.Category === selectedCategory : true;
+        return matchesSearch && matchesCategory;
       });
 
       displayItems(filtered);
@@ -282,11 +288,15 @@
     function openModal(imageSrc) {
       zoomLevel = 1;
       zoomClickCount = 0;
+      imageX = 0;
+      imageY = 0;
       modalOpen = true;
       history.pushState({ modal: true }, '');
       const modal = document.getElementById('imageModal');
       const modalImg = document.getElementById('modalImage');
       modalImg.style.transform = `scale(${zoomLevel})`;
+      modalImg.style.left = '0px';
+      modalImg.style.top = '0px';
       modal.style.display = 'block';
       modalImg.src = imageSrc;
     }
@@ -294,29 +304,46 @@
     function closeModal() {
       zoomLevel = 1;
       zoomClickCount = 0;
+      imageX = 0;
+      imageY = 0;
       modalOpen = false;
       document.getElementById('imageModal').style.display = 'none';
+      const modalImg = document.getElementById('modalImage');
+      modalImg.style.left = '0px';
+      modalImg.style.top = '0px';
     }
 
     function zoomIn(event) {
       event.stopPropagation();
       zoomClickCount++;
       zoomLevel += 0.2 + 0.05 * zoomClickCount;
-      document.getElementById('modalImage').style.transform = `scale(${zoomLevel})`;
+      updateImageTransform();
     }
 
     function zoomOut(event) {
       event.stopPropagation();
       zoomClickCount++;
       zoomLevel = Math.max(0.1, zoomLevel - (0.2 + 0.05 * zoomClickCount));
-      document.getElementById('modalImage').style.transform = `scale(${zoomLevel})`;
+      updateImageTransform();
     }
 
     function resetZoom(event) {
       event.stopPropagation();
       zoomLevel = 1;
       zoomClickCount = 0;
-      document.getElementById('modalImage').style.transform = `scale(${zoomLevel})`;
+      imageX = 0;
+      imageY = 0;
+      updateImageTransform();
+      const modalImg = document.getElementById('modalImage');
+      modalImg.style.left = '0px';
+      modalImg.style.top = '0px';
+    }
+
+    function updateImageTransform() {
+      const modalImg = document.getElementById('modalImage');
+      modalImg.style.transform = `scale(${zoomLevel})`;
+      modalImg.style.left = `${imageX}px`;
+      modalImg.style.top = `${imageY}px`;
     }
 
     window.addEventListener('popstate', function (event) {
@@ -331,10 +358,58 @@
     });
     modalWrapper.addEventListener('touchend', e => {
       endY = e.changedTouches[0].screenY;
-      if (Math.abs(endY - startY) > 150) {
+      if (Math.abs(endY - startY) > 150 && !isDragging) {
         closeModal();
       }
     });
+
+    // Image dragging and scroll zoom
+    const modalImg = document.getElementById('modalImage');
+    modalImg.addEventListener('mousedown', startDragging);
+    modalImg.addEventListener('touchstart', startDragging);
+    modalImg.addEventListener('mousemove', dragImage);
+    modalImg.addEventListener('touchmove', dragImage);
+    modalImg.addEventListener('mouseup', stopDragging);
+    modalImg.addEventListener('mouseleave', stopDragging);
+    modalImg.addEventListener('touchend', stopDragging);
+    modalImg.addEventListener('wheel', e => {
+      e.preventDefault();
+      zoomLevel += e.deltaY < 0 ? 0.1 : -0.1;
+      zoomLevel = Math.max(0.1, zoomLevel);
+      updateImageTransform();
+    });
+
+    function startDragging(e) {
+      e.preventDefault();
+      isDragging = true;
+      dragStartX = (e.clientX || e.changedTouches[0].clientX) - imageX;
+      dragStartY = (e.clientY || e.changedTouches[0].clientY) - imageY;
+      modalImg.style.cursor = 'grabbing';
+    }
+
+    function dragImage(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+      const clientX = e.clientX || e.changedTouches[0].clientX;
+      const clientY = e.clientY || e.changedTouches[0].clientY;
+      imageX = clientX - dragStartX;
+      imageY = clientY - dragStartY;
+
+      // Constrain movement to image bounds
+      const bounds = modalImg.getBoundingClientRect();
+      const maxX = (bounds.width * (zoomLevel - 1)) / 2;
+      const maxY = (bounds.height * (zoomLevel - 1)) / 2;
+      imageX = Math.max(-maxX, Math.min(maxX, imageX));
+      imageY = Math.max(-maxY, Math.min(maxY, imageY));
+
+      modalImg.style.left = `${imageX}px`;
+      modalImg.style.top = `${imageY}px`;
+    }
+
+    function stopDragging() {
+      isDragging = false;
+      modalImg.style.cursor = 'grab';
+    }
   </script>
 </body>
 </html>
