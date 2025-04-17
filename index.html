@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inventory Catalogue</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -12,12 +13,10 @@
       padding: 20px;
       user-select: none;
     }
-
     h1 {
       text-align: center;
       animation: fadeIn 1s ease-in-out;
     }
-
     #controls {
       display: flex;
       justify-content: center;
@@ -26,21 +25,18 @@
       margin-bottom: 20px;
       animation: slideIn 1s ease-out;
     }
-
     input, select {
       padding: 10px;
       font-size: 16px;
       border-radius: 6px;
       border: 1px solid #ccc;
     }
-
     #items-container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 20px;
       animation: fadeIn 1s ease-in-out;
     }
-
     .item-card {
       background: white;
       border-radius: 10px;
@@ -49,11 +45,9 @@
       text-align: center;
       transition: transform 0.3s ease;
     }
-
     .item-card:hover {
       transform: translateY(-3px);
     }
-
     .item-card img {
       width: 100%;
       height: 180px;
@@ -62,11 +56,9 @@
       cursor: zoom-in;
       transition: transform 0.3s ease;
     }
-
     .item-card img:hover {
       transform: scale(1.05);
     }
-
     .modal {
       display: none;
       position: fixed;
@@ -79,7 +71,6 @@
       background-color: rgba(0,0,0,0.9);
       animation: fadeIn 0.5s ease-in-out;
     }
-
     .modal-content-wrapper {
       text-align: center;
       position: relative;
@@ -88,7 +79,6 @@
       flex-direction: column;
       justify-content: center;
     }
-
     .modal-content {
       display: inline-block;
       max-height: 80%;
@@ -102,7 +92,6 @@
       position: relative;
       user-select: none;
     }
-
     .zoom-controls {
       position: absolute;
       bottom: 15px;
@@ -113,7 +102,6 @@
       gap: 15px;
       animation: fadeIn 0.4s ease-in-out;
     }
-
     .zoom-controls button {
       background: #ffffffdd;
       border: 1px solid #ccc;
@@ -127,12 +115,10 @@
       gap: 5px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
-
     .zoom-controls button:hover {
       background: #e2e2e2;
       transform: scale(1.05);
     }
-
     .close {
       position: absolute;
       top: 25px;
@@ -143,24 +129,20 @@
       cursor: pointer;
       z-index: 100;
     }
-
     .error-message {
       color: red;
       text-align: center;
       margin: 20px;
       display: none;
     }
-
     @keyframes fadeIn {
       from {opacity: 0; transform: translateY(10px);}
       to {opacity: 1; transform: translateY(0);}
     }
-
     @keyframes slideIn {
       from {opacity: 0; transform: translateY(-20px);}
       to {opacity: 1; transform: translateY(0);}
     }
-
     @media (max-width: 600px) {
       .item-card img {
         height: 150px;
@@ -174,18 +156,14 @@
 </head>
 <body>
   <h1>Inventory Catalogue</h1>
-
   <div id="controls">
     <input type="text" id="search-bar" placeholder="Search items..." oninput="filterItems()"/>
     <select id="category-filter" onchange="filterItems()">
       <option value="">All Categories</option>
     </select>
   </div>
-
   <div id="items-container"></div>
   <div id="error-message" class="error-message"></div>
-
-  <!-- Modal for Image Preview -->
   <div id="imageModal" class="modal" onclick="closeModal()">
     <span class="close" onclick="closeModal()">×</span>
     <div class="zoom-controls">
@@ -197,7 +175,6 @@
       <img class="modal-content" id="modalImage" onclick="event.stopPropagation()" oncontextmenu="return false" />
     </div>
   </div>
-
   <script>
     let allItems = [];
     let zoomLevel = 1;
@@ -210,62 +187,37 @@
     let dragStartY = 0;
     let imageX = 0;
     let imageY = 0;
-
-    function normalizeCategory(category) {
-      if (!category) return category;
-      // Normalize hyphens and spaces for FINI - CHOCOLATE
-      const normalized = category
-        .replace(/[\-\s]+/g, ' - ') // Replace any hyphen or spaces with ' - '
-        .trim();
-      // Map common variations to standard
-      if (normalized.match(/^FINI[ -]*CHOCOLATE$/i)) {
-        return 'FINI - CHOCOLATE';
-      }
-      return normalized;
-    }
-
-    fetch('inventory_data.csv')
-      .then(response => {
-        if (!response.ok) throw new Error('Failed to load CSV');
-        return response.text();
-      })
-      .then(csv => {
-        const lines = csv.trim().split('\n');
-        const headers = lines[0].split(',').map(h => h.trim());
-        allItems = lines.slice(1).map(line => {
-          const data = line.split(',').map(d => d.trim());
-          if (data.length !== headers.length) return null;
-          let obj = {};
-          headers.forEach((h, i) => obj[h] = data[i] || '');
-          // Normalize Category field
-          if (obj.Category) {
-            obj.Category = normalizeCategory(obj.Category);
-          }
-          return obj;
-        }).filter(item => item && item['Item Description'] && item['Item Code']);
-
-        // Check for potentially erroneous categories
+    Papa.parse('inventory_data.csv', {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        if (results.errors.length > 0 || !results.data) {
+          document.getElementById('error-message').textContent = 'Error parsing CSV file. Please check the file format.';
+          document.getElementById('error-message').style.display = 'block';
+          return;
+        }
+        allItems = results.data.filter(item => item['Item Code'] && item['Item Description']);
         const foundCategories = [...new Set(allItems.map(item => item.Category).filter(Boolean))];
         const suspiciousCategories = foundCategories.filter(cat => 
           cat && !['BELGIUM - OPEN', 'BELGIUM - WRAPPED', 'FINI - CHOCOLATE', 'ITALIAN - WRAPPED'].includes(cat)
         );
         if (suspiciousCategories.length > 0) {
-          document.getElementById('error-message').textContent = `Warning: Unusual categories found: ${suspiciousCategories.join(', ')}. Please check CSV for typos or formatting (e.g., spaces or hyphens in FINI - CHOCOLATE).`;
+          document.getElementById('error-message').textContent = `Warning: Unusual categories found: ${suspiciousCategories.join(', ')}. Please check CSV for typos or unquoted commas in Item Description.`;
           document.getElementById('error-message').style.display = 'block';
         }
-
         populateCategories();
         const categoryFilter = document.getElementById('category-filter');
         categoryFilter.value = allItems.some(item => item.Category === 'ITALIAN - WRAPPED')
           ? 'ITALIAN - WRAPPED'
           : '';
         filterItems();
-      })
-      .catch(error => {
+      },
+      error: function() {
         document.getElementById('error-message').textContent = 'Failed to load inventory_data.csv. Please check the file or network connection.';
         document.getElementById('error-message').style.display = 'block';
-      });
-
+      }
+    });
     function populateCategories() {
       const categoryFilter = document.getElementById('category-filter');
       const categories = [...new Set(allItems.map(item => item.Category).filter(Boolean))].sort();
@@ -276,21 +228,17 @@
         categoryFilter.appendChild(option);
       });
     }
-
     function displayItems(items) {
       const container = document.getElementById('items-container');
       container.innerHTML = '';
       items.forEach(item => {
         const card = document.createElement('div');
         card.className = 'item-card';
-
         const imageFile = item['Image Filename'] || 'default.jpg';
         const imagePath = `images/${imageFile}`;
-
         const price = item['Price'] && !isNaN(parseFloat(item['Price']))
           ? `AED ${parseFloat(item['Price']).toFixed(2)}`
           : 'AED N/A';
-
         card.innerHTML = `
           <img src="${imagePath}" loading="lazy" alt="${item['Item Description'] || 'Item'}" onclick="openModal('${imagePath}')" oncontextmenu="return false" />
           <h3>${item['Item Description'] || 'Unknown Item'}</h3>
@@ -301,11 +249,9 @@
         container.appendChild(card);
       });
     }
-
     function filterItems() {
       const searchTerm = document.getElementById('search-bar').value.toLowerCase();
       const selectedCategory = document.getElementById('category-filter').value;
-
       const filtered = allItems.filter(item => {
         const matchesSearch = searchTerm
           ? Object.values(item).some(value => (value || '').toLowerCase().includes(searchTerm))
@@ -313,10 +259,8 @@
         const matchesCategory = searchTerm ? true : selectedCategory ? item.Category === selectedCategory : true;
         return matchesSearch && matchesCategory;
       });
-
       displayItems(filtered);
     }
-
     function openModal(imageSrc) {
       zoomLevel = 1;
       zoomClickCount = 0;
@@ -332,7 +276,6 @@
       modal.style.display = 'block';
       modalImg.src = imageSrc;
     }
-
     function closeModal() {
       zoomLevel = 1;
       zoomClickCount = 0;
@@ -344,21 +287,18 @@
       modalImg.style.left = '0px';
       modalImg.style.top = '0px';
     }
-
     function zoomIn(event) {
       event.stopPropagation();
       zoomClickCount++;
       zoomLevel += 0.2 + 0.05 * zoomClickCount;
       updateImageTransform();
     }
-
     function zoomOut(event) {
       event.stopPropagation();
       zoomClickCount++;
       zoomLevel = Math.max(0.1, zoomLevel - (0.2 + 0.05 * zoomClickCount));
       updateImageTransform();
     }
-
     function resetZoom(event) {
       event.stopPropagation();
       zoomLevel = 1;
@@ -370,20 +310,17 @@
       modalImg.style.left = '0px';
       modalImg.style.top = '0px';
     }
-
     function updateImageTransform() {
       const modalImg = document.getElementById('modalImage');
       modalImg.style.transform = `scale(${zoomLevel})`;
       modalImg.style.left = `${imageX}px`;
       modalImg.style.top = `${imageY}px`;
     }
-
     window.addEventListener('popstate', function (event) {
       if (modalOpen && event.state && event.state.modal) {
         closeModal();
       }
     });
-
     const modalWrapper = document.querySelector('.modal-content-wrapper');
     modalWrapper.addEventListener('touchstart', e => {
       startY = e.changedTouches[0].screenY;
@@ -394,8 +331,6 @@
         closeModal();
       }
     });
-
-    // Image dragging, scroll zoom, and context menu block
     const modalImg = document.getElementById('modalImage');
     modalImg.addEventListener('mousedown', startDragging);
     modalImg.addEventListener('touchstart', startDragging);
@@ -414,7 +349,6 @@
       e.preventDefault();
       return false;
     });
-
     function startDragging(e) {
       e.preventDefault();
       isDragging = true;
@@ -422,7 +356,6 @@
       dragStartY = (e.clientY || e.changedTouches[0].clientY) - imageY;
       modalImg.style.cursor = 'grabbing';
     }
-
     function dragImage(e) {
       if (!isDragging) return;
       e.preventDefault();
@@ -430,18 +363,14 @@
       const clientY = e.clientY || e.changedTouches[0].clientY;
       imageX = clientX - dragStartX;
       imageY = clientY - dragStartY;
-
-      // Constrain movement to image bounds
       const bounds = modalImg.getBoundingClientRect();
       const maxX = (bounds.width * (zoomLevel - 1)) / 2;
       const maxY = (bounds.height * (zoomLevel - 1)) / 2;
       imageX = Math.max(-maxX, Math.min(maxX, imageX));
       imageY = Math.max(-maxY, Math.min(maxY, imageY));
-
       modalImg.style.left = `${imageX}px`;
       modalImg.style.top = `${imageY}px`;
     }
-
     function stopDragging() {
       isDragging = false;
       modalImg.style.cursor = 'grab';
