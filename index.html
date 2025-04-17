@@ -1,205 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inventory Catalogue</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f9f9f9;
+      background: #f8f8f8;
+      margin: 0;
       padding: 20px;
     }
-
-    h1 {
-      text-align: center;
-    }
-
-    .search-container {
+    header {
       text-align: center;
       margin-bottom: 20px;
     }
-
-    input,
-    select {
+    input, select {
       padding: 10px;
       font-size: 16px;
-      margin: 5px;
+      margin-right: 10px;
+      margin-bottom: 20px;
     }
-
     .item-container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
     }
-
     .item {
-      background: #fff;
-      margin: 15px;
+      background: white;
       padding: 15px;
-      border-radius: 10px;
-      width: 220px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      text-align: center;
-      position: relative;
-    }
-
-    .item-image-container {
-      position: relative;
-      overflow: hidden;
-      width: 100%;
-      height: 160px;
       border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease;
     }
-
+    .item:hover {
+      transform: translateY(-5px);
+    }
     .item img {
       width: 100%;
-      height: 100%;
-      object-fit: contain;
-      transition: transform 0.2s ease-in-out;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 6px;
+      transition: transform 0.3s ease-in-out;
     }
-
-    .zoom-lens {
-      position: absolute;
-      border: 2px solid #888;
-      width: 100px;
-      height: 100px;
-      display: none;
-      pointer-events: none;
+    .zoom-container {
+      overflow: hidden;
+      position: relative;
     }
-
-    .zoom-result {
-      position: absolute;
-      display: none;
-      border: 2px solid #ccc;
-      width: 250px;
-      height: 250px;
-      top: 0;
-      left: 230px;
-      background-repeat: no-repeat;
-      background-size: 400% 400%;
-      z-index: 1000;
+    .zoom-container:hover img {
+      transform: scale(1.8);
     }
-
     .low-stock {
       color: red;
       font-weight: bold;
+    }
+    @media (max-width: 600px) {
+      .item img {
+        height: 150px;
+      }
     }
   </style>
 </head>
 <body>
 
-<h1>Inventory Catalogue</h1>
+  <header>
+    <h1>Inventory Catalogue</h1>
+    <input type="text" id="search-bar" placeholder="Search items..." oninput="filterItems()"/>
+    <select id="category-filter" onchange="filterItems()">
+      <option value="">All Categories</option>
+    </select>
+  </header>
 
-<div class="search-container">
-  <input type="text" id="search-bar" placeholder="Search items..." />
-  <select id="category-filter">
-    <option value="">All Categories</option>
-  </select>
-</div>
+  <div class="item-container" id="item-list"></div>
 
-<div id="item-container" class="item-container"></div>
+  <script>
+    let inventoryItems = [];
 
-<script>
-  let inventoryItems = [];
-
-  function loadCSV() {
-    Papa.parse('inventory_data.csv', {
-      download: true,
-      header: true,
-      dynamicTyping: true,
-      complete: function(results) {
-        inventoryItems = results.data;
-        populateCategoryFilter();
+    fetch("items.csv")
+      .then(response => response.text())
+      .then(csv => {
+        const rows = csv.trim().split("\n");
+        const headers = rows[0].split(",");
+        inventoryItems = rows.slice(1).map(row => {
+          const values = row.split(",");
+          const item = {};
+          headers.forEach((h, i) => {
+            item[h.trim()] = values[i]?.trim() || "";
+          });
+          return item;
+        });
+        populateCategories();
         displayItems(inventoryItems);
-      }
-    });
-  }
-
-  function displayItems(items) {
-    const container = document.getElementById('item-container');
-    container.innerHTML = '';
-
-    items.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'item';
-
-      const imagePath = `images/${item['Image Filename']}`;
-
-      div.innerHTML = `
-        <div class="item-image-container">
-          <img src="${imagePath}" alt="${item['Item Description']}" class="zoomable" />
-          <div class="zoom-result"></div>
-        </div>
-        <h3>${item['Item Description']}</h3>
-        <p>Code: ${item['Item Code']}</p>
-        <p>Price: AED ${parseFloat(item['Price']).toFixed(2)}</p>
-        <p>Category: ${item['Category']}</p>
-      `;
-
-      container.appendChild(div);
-
-      // Add zoom functionality
-      const img = div.querySelector("img");
-      const zoomResult = div.querySelector(".zoom-result");
-
-      img.addEventListener("mouseenter", () => {
-        zoomResult.style.display = "block";
-        zoomResult.style.backgroundImage = `url('${imagePath}')`;
       });
 
-      img.addEventListener("mousemove", (e) => {
-        const bounds = img.getBoundingClientRect();
-        const x = e.pageX - bounds.left - window.scrollX;
-        const y = e.pageY - bounds.top - window.scrollY;
-        const percentX = x / img.offsetWidth * 100;
-        const percentY = y / img.offsetHeight * 100;
-        zoomResult.style.backgroundPosition = `${percentX}% ${percentY}%`;
-        zoomResult.style.top = "0";
-        zoomResult.style.left = "230px";
+    function populateCategories() {
+      const categorySet = new Set(inventoryItems.map(item => item["Category"]));
+      const categoryFilter = document.getElementById("category-filter");
+      Array.from(categorySet).sort().forEach(category => {
+        if (category) {
+          const option = document.createElement("option");
+          option.value = category;
+          option.textContent = category;
+          categoryFilter.appendChild(option);
+        }
+      });
+    }
+
+    function displayItems(items) {
+      const list = document.getElementById("item-list");
+      list.innerHTML = "";
+      items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <div class="zoom-container">
+            <img src="images/${item["Image Filename"]}" alt="${item["Item Description"]}">
+          </div>
+          <h3>${item["Item Description"]}</h3>
+          <p><strong>Code:</strong> ${item["Item Code"]}</p>
+          <p><strong>Category:</strong> ${item["Category"]}</p>
+          <p><strong>Price:</strong> AED ${parseFloat(item["Price"] || 0).toFixed(2)}</p>
+          ${item.Stock && Number(item.Stock) < 50 ? '<p class="low-stock">⚠️ Low Stock</p>' : ""}
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function filterItems() {
+      const search = document.getElementById('search-bar').value.toLowerCase();
+      const category = document.getElementById('category-filter').value;
+
+      const filtered = inventoryItems.filter(item => {
+        const inSearch =
+          (item['Item Description'] && item['Item Description'].toLowerCase().includes(search)) ||
+          (item['Item Code'] && String(item['Item Code']).toLowerCase().includes(search)) ||
+          (item['Category'] && item['Category'].toLowerCase().includes(search));
+        const inCategory = category ? item['Category'] === category : true;
+        return inSearch && inCategory;
       });
 
-      img.addEventListener("mouseleave", () => {
-        zoomResult.style.display = "none";
-      });
-    });
-  }
-
-  function populateCategoryFilter() {
-    const categories = [...new Set(inventoryItems.map(item => item['Category']))].sort();
-    const select = document.getElementById('category-filter');
-    categories.forEach(cat => {
-      const opt = document.createElement('option');
-      opt.value = cat;
-      opt.textContent = cat;
-      select.appendChild(opt);
-    });
-  }
-
-  function filterItems() {
-    const search = document.getElementById('search-bar').value.toLowerCase();
-    const category = document.getElementById('category-filter').value;
-
-    const filtered = inventoryItems.filter(item => {
-      const inSearch =
-        item['Item Description'].toLowerCase().includes(search) ||
-        item['Item Code'].toLowerCase().includes(search) ||
-        item['Category'].toLowerCase().includes(search);
-      const inCategory = category ? item['Category'] === category : true;
-      return inSearch && inCategory;
-    });
-
-    displayItems(filtered);
-  }
-
-  // Live search
-  document.getElementById('search-bar').addEventListener('input', filterItems);
-  document.getElementById('category-filter').addEventListener('change', filterItems);
-
-  window.onload = loadCSV;
-</script>
-
+      displayItems(filtered);
+    }
+  </script>
 </body>
 </html>
