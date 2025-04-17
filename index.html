@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+html_code = """<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -179,6 +179,7 @@
     <div class="zoom-controls">
       <button onclick="zoomIn(event)">🔍➕ Zoom In</button>
       <button onclick="zoomOut(event)">🔍➖ Zoom Out</button>
+      <button onclick="resetZoom(event)">🔄 Reset</button>
     </div>
     <div class="modal-content-wrapper" onclick="event.stopPropagation()">
       <img class="modal-content" id="modalImage" />
@@ -189,11 +190,13 @@
     let allItems = [];
     let zoomLevel = 1;
     let modalOpen = false;
+    let startX = 0;
+    let endX = 0;
 
     fetch('inventory_data.csv')
       .then(response => response.text())
       .then(csv => {
-        const lines = csv.trim().split('\n');
+        const lines = csv.trim().split('\\n');
         const headers = lines[0].split(',').map(h => h.trim());
         allItems = lines.slice(1).map(line => {
           const data = line.split(',').map(d => d.trim());
@@ -227,13 +230,13 @@
         const imageFile = item["Image Filename"];
         const imagePath = `images/${imageFile}`;
 
-        card.innerHTML = `
-          <img src="${imagePath}" alt="${item["Item Description"]}" onclick="openModal('${imagePath}')" />
-          <h3>${item["Item Description"]}</h3>
-          <p><strong>Code:</strong> ${item["Item Code"]}</p>
-          <p><strong>Category:</strong> ${item["Category"]}</p>
-          <p><strong>Price:</strong> AED ${parseFloat(item["Price"]).toFixed(2)}</p>
-        `;
+        card.innerHTML = \`
+          <img src="\${imagePath}" loading="lazy" alt="\${item["Item Description"]}" onclick="openModal('\${imagePath}')" />
+          <h3>\${item["Item Description"]}</h3>
+          <p><strong>Code:</strong> \${item["Item Code"]}</p>
+          <p><strong>Category:</strong> \${item["Category"]}</p>
+          <p><strong>Price:</strong> AED \${parseFloat(item["Price"]).toFixed(2)}</p>
+        \`;
         container.appendChild(card);
       });
     }
@@ -259,7 +262,7 @@
       history.pushState({ modal: true }, "");
       const modal = document.getElementById("imageModal");
       const modalImg = document.getElementById("modalImage");
-      modalImg.style.transform = `scale(${zoomLevel})`;
+      modalImg.style.transform = \`scale(\${zoomLevel})\`;
       modal.style.display = "block";
       modalImg.src = imageSrc;
     }
@@ -274,17 +277,32 @@
     function zoomIn(event) {
       event.stopPropagation();
       zoomLevel += 0.2;
-      document.getElementById("modalImage").style.transform = `scale(${zoomLevel})`;
+      document.getElementById("modalImage").style.transform = \`scale(\${zoomLevel})\`;
     }
 
     function zoomOut(event) {
       event.stopPropagation();
       zoomLevel = Math.max(0.2, zoomLevel - 0.2);
-      document.getElementById("modalImage").style.transform = `scale(${zoomLevel})`;
+      document.getElementById("modalImage").style.transform = \`scale(\${zoomLevel})\`;
+    }
+
+    function resetZoom(event) {
+      event.stopPropagation();
+      zoomLevel = 1;
+      document.getElementById("modalImage").style.transform = \`scale(\${zoomLevel})\`;
     }
 
     window.addEventListener('popstate', function () {
       if (modalOpen) closeModal();
+    });
+
+    const modalWrapper = document.querySelector('.modal-content-wrapper');
+    modalWrapper.addEventListener('touchstart', e => startX = e.changedTouches[0].screenX);
+    modalWrapper.addEventListener('touchend', e => {
+      endX = e.changedTouches[0].screenX;
+      if (Math.abs(endX - startX) > 100) {
+        closeModal();
+      }
     });
   </script>
 </body>
