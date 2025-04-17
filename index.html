@@ -211,12 +211,18 @@
     let imageX = 0;
     let imageY = 0;
 
-    const validCategories = [
-      'BELGIUM - OPEN',
-      'BELGIUM - WRAPPED',
-      'FINI - CHOCOLATE',
-      'ITALIAN - WRAPPED'
-    ];
+    function normalizeCategory(category) {
+      if (!category) return category;
+      // Normalize hyphens and spaces for FINI - CHOCOLATE
+      const normalized = category
+        .replace(/[\-\s]+/g, ' - ') // Replace any hyphen or spaces with ' - '
+        .trim();
+      // Map common variations to standard
+      if (normalized.match(/^FINI[ -]*CHOCOLATE$/i)) {
+        return 'FINI - CHOCOLATE';
+      }
+      return normalized;
+    }
 
     fetch('inventory_data.csv')
       .then(response => {
@@ -228,17 +234,23 @@
         const headers = lines[0].split(',').map(h => h.trim());
         allItems = lines.slice(1).map(line => {
           const data = line.split(',').map(d => d.trim());
-          if (data.length !== headers.length) return null; // Skip malformed rows
+          if (data.length !== headers.length) return null;
           let obj = {};
           headers.forEach((h, i) => obj[h] = data[i] || '');
+          // Normalize Category field
+          if (obj.Category) {
+            obj.Category = normalizeCategory(obj.Category);
+          }
           return obj;
         }).filter(item => item && item['Item Description'] && item['Item Code']);
 
-        // Check for unexpected categories
+        // Check for potentially erroneous categories
         const foundCategories = [...new Set(allItems.map(item => item.Category).filter(Boolean))];
-        const invalidCategories = foundCategories.filter(cat => !validCategories.includes(cat));
-        if (invalidCategories.length > 0) {
-          document.getElementById('error-message').textContent = `Warning: Unexpected categories found: ${invalidCategories.join(', ')}. Only expected categories will be shown.`;
+        const suspiciousCategories = foundCategories.filter(cat => 
+          cat && !['BELGIUM - OPEN', 'BELGIUM - WRAPPED', 'FINI - CHOCOLATE', 'ITALIAN - WRAPPED'].includes(cat)
+        );
+        if (suspiciousCategories.length > 0) {
+          document.getElementById('error-message').textContent = `Warning: Unusual categories found: ${suspiciousCategories.join(', ')}. Please check CSV for typos or formatting (e.g., spaces or hyphens in FINI - CHOCOLATE).`;
           document.getElementById('error-message').style.display = 'block';
         }
 
@@ -256,7 +268,7 @@
 
     function populateCategories() {
       const categoryFilter = document.getElementById('category-filter');
-      const categories = validCategories.sort();
+      const categories = [...new Set(allItems.map(item => item.Category).filter(Boolean))].sort();
       categories.forEach(cat => {
         const option = document.createElement('option');
         option.value = cat;
