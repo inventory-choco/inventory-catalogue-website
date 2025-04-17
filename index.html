@@ -91,13 +91,16 @@
 
     .modal-content {
       display: inline-block;
-      max-width: 90%;
       max-height: 80%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
       border-radius: 10px;
       cursor: grab;
       transition: transform 0.3s ease-in-out;
       transform-origin: center;
       position: relative;
+      user-select: none;
     }
 
     .zoom-controls {
@@ -191,7 +194,7 @@
       <button onclick="resetZoom(event)">🔄 Reset</button>
     </div>
     <div class="modal-content-wrapper" onclick="closeModal()">
-      <img class="modal-content" id="modalImage" onclick="event.stopPropagation()" />
+      <img class="modal-content" id="modalImage" onclick="event.stopPropagation()" oncontextmenu="return false" />
     </div>
   </div>
 
@@ -208,6 +211,13 @@
     let imageX = 0;
     let imageY = 0;
 
+    const validCategories = [
+      'BELGIUM - OPEN',
+      'BELGIUM - WRAPPED',
+      'FINI - CHOCOLATE',
+      'ITALIAN - WRAPPED'
+    ];
+
     fetch('inventory_data.csv')
       .then(response => {
         if (!response.ok) throw new Error('Failed to load CSV');
@@ -218,10 +228,20 @@
         const headers = lines[0].split(',').map(h => h.trim());
         allItems = lines.slice(1).map(line => {
           const data = line.split(',').map(d => d.trim());
+          if (data.length !== headers.length) return null; // Skip malformed rows
           let obj = {};
           headers.forEach((h, i) => obj[h] = data[i] || '');
           return obj;
-        }).filter(item => item['Item Description'] && item['Item Code']);
+        }).filter(item => item && item['Item Description'] && item['Item Code']);
+
+        // Check for unexpected categories
+        const foundCategories = [...new Set(allItems.map(item => item.Category).filter(Boolean))];
+        const invalidCategories = foundCategories.filter(cat => !validCategories.includes(cat));
+        if (invalidCategories.length > 0) {
+          document.getElementById('error-message').textContent = `Warning: Unexpected categories found: ${invalidCategories.join(', ')}. Only expected categories will be shown.`;
+          document.getElementById('error-message').style.display = 'block';
+        }
+
         populateCategories();
         const categoryFilter = document.getElementById('category-filter');
         categoryFilter.value = allItems.some(item => item.Category === 'ITALIAN - WRAPPED')
@@ -230,13 +250,13 @@
         filterItems();
       })
       .catch(error => {
-        document.getElementById('error-message').textContent = 'Error loading inventory data. Please check the CSV file.';
+        document.getElementById('error-message').textContent = 'Failed to load inventory_data.csv. Please check the file or network connection.';
         document.getElementById('error-message').style.display = 'block';
       });
 
     function populateCategories() {
       const categoryFilter = document.getElementById('category-filter');
-      const categories = [...new Set(allItems.map(item => item.Category).filter(Boolean))].sort();
+      const categories = validCategories.sort();
       categories.forEach(cat => {
         const option = document.createElement('option');
         option.value = cat;
@@ -363,7 +383,7 @@
       }
     });
 
-    // Image dragging and scroll zoom
+    // Image dragging, scroll zoom, and context menu block
     const modalImg = document.getElementById('modalImage');
     modalImg.addEventListener('mousedown', startDragging);
     modalImg.addEventListener('touchstart', startDragging);
@@ -377,6 +397,10 @@
       zoomLevel += e.deltaY < 0 ? 0.1 : -0.1;
       zoomLevel = Math.max(0.1, zoomLevel);
       updateImageTransform();
+    });
+    modalImg.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      return false;
     });
 
     function startDragging(e) {
