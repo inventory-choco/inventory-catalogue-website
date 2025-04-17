@@ -91,16 +91,13 @@
 
     .modal-content {
       display: inline-block;
+      max-width: 90%;
       max-height: 80%;
-      width: auto;
-      height: auto;
-      object-fit: contain;
       border-radius: 10px;
       cursor: grab;
       transition: transform 0.3s ease-in-out;
       transform-origin: center;
       position: relative;
-      user-select: none;
     }
 
     .zoom-controls {
@@ -194,7 +191,7 @@
       <button onclick="resetZoom(event)">🔄 Reset</button>
     </div>
     <div class="modal-content-wrapper" onclick="closeModal()">
-      <img class="modal-content" id="modalImage" onclick="event.stopPropagation()" oncontextmenu="return false" />
+      <img class="modal-content" id="modalImage" onclick="event.stopPropagation()" />
     </div>
   </div>
 
@@ -366,7 +363,7 @@
       }
     });
 
-    // Image dragging, scroll zoom, and context menu block
+    // Image dragging and scroll zoom
     const modalImg = document.getElementById('modalImage');
     modalImg.addEventListener('mousedown', startDragging);
     modalImg.addEventListener('touchstart', startDragging);
@@ -380,10 +377,6 @@
       zoomLevel += e.deltaY < 0 ? 0.1 : -0.1;
       zoomLevel = Math.max(0.1, zoomLevel);
       updateImageTransform();
-    });
-    modalImg.addEventListener('contextmenu', e => {
-      e.preventDefault();
-      return false;
     });
 
     function startDragging(e) {
