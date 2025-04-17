@@ -76,7 +76,7 @@
   <script>
     let inventoryItems = [];
 
-    fetch("items.csv")
+    fetch("inventory_data.csv")
       .then(response => response.text())
       .then(csv => {
         const rows = csv.trim().split("\n");
