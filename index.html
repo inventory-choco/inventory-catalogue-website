@@ -86,6 +86,15 @@
       padding: 8px 12px;
       font-size: 14px;
       margin: 0 5px;
+      border: none;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+
+    .zoom-controls button:hover {
+      background-color: #0056b3;
     }
 
     .close {
@@ -136,10 +145,12 @@
         allItems = lines.slice(1).map(row => {
           const values = row.split(',');
           let obj = {};
-          headers.forEach((h, i) => obj[h.trim()] = values[i].trim());
+          headers.forEach((h, i) => obj[h.trim()] = values[i]?.trim());
           return obj;
         });
+
         populateCategories();
+        document.getElementById('category-filter').value = 'ITALIAN - WRAPPED';
         filterItems();
       });
 
@@ -173,7 +184,9 @@
         img.src = 'images/' + item["Image Filename"];
         img.alt = item["Item Description"];
         img.loading = "lazy";
-        img.onclick = () => openModal(img.src);
+        img.onclick = function() {
+          openModal(this.src);
+        };
 
         card.appendChild(img);
         card.innerHTML += `<h3>${item["Item Description"]}</h3>
@@ -191,11 +204,14 @@
       img.src = src;
       img.style.transform = 'scale(1)';
       modal.style.display = 'block';
-      history.pushState({modalOpen: true}, '', '#preview');
+      history.pushState({ modalOpen: true }, '', '#preview');
     }
 
     function closeModal() {
-      document.getElementById('imageModal').style.display = 'none';
+      const modal = document.getElementById('imageModal');
+      modal.style.display = 'none';
+      const img = document.getElementById('modalImage');
+      img.src = '';
       if (location.hash === "#preview") {
         history.back();
       }
@@ -204,13 +220,13 @@
     function zoomIn(e) {
       e.stopPropagation();
       zoomLevel += 0.4;
-      document.getElementById('modalImage').style.transform = `scale(${zoomLevel})`;
+      document.getElementById('modalImage').style.transform = 'scale(' + zoomLevel + ')';
     }
 
     function zoomOut(e) {
       e.stopPropagation();
-      zoomLevel = Math.max(0.4, zoomLevel - 0.4);
-      document.getElementById('modalImage').style.transform = `scale(${zoomLevel})`;
+      zoomLevel = Math.max(1, zoomLevel - 0.4);
+      document.getElementById('modalImage').style.transform = 'scale(' + zoomLevel + ')';
     }
 
     function resetZoom(e) {
@@ -219,34 +235,32 @@
       document.getElementById('modalImage').style.transform = 'scale(1)';
     }
 
-    // Click outside image to close modal
-    window.addEventListener('click', function (e) {
-      const modal = document.getElementById('imageModal');
-      const modalImg = document.getElementById('modalImage');
-      if (modal.style.display === 'block' && !modalImg.contains(e.target) && !e.target.closest('.zoom-controls')) {
+    // Click outside image closes modal
+    document.getElementById('imageModal').addEventListener('click', function (e) {
+      if (!e.target.closest('.modal-content-wrapper')) {
         closeModal();
       }
     });
 
-    // Back button handling
-    window.addEventListener('popstate', (e) => {
-      const modal = document.getElementById('imageModal');
-      if (modal.style.display === 'block') {
-        modal.style.display = 'none';
-      }
+    // Mobile swipe down to close
+    let startY = 0;
+    document.getElementById('modalImage').addEventListener('touchstart', function(e) {
+      startY = e.touches[0].clientY;
     });
 
-    // Mobile swipe to close
-    let touchStartY = 0;
-    document.getElementById('modalImage').addEventListener('touchstart', e => {
-      touchStartY = e.touches[0].clientY;
-    });
-    document.getElementById('modalImage').addEventListener('touchend', e => {
-      const touchEndY = e.changedTouches[0].clientY;
-      if (touchEndY - touchStartY > 50) {
+    document.getElementById('modalImage').addEventListener('touchend', function(e) {
+      const endY = e.changedTouches[0].clientY;
+      if (endY - startY > 100) {
         closeModal();
       }
     });
+
+    // Mobile back button support
+    window.onpopstate = function (event) {
+      if (event.state && event.state.modalOpen) {
+        closeModal();
+      }
+    };
   </script>
 </body>
 </html>
