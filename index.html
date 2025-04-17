@@ -10,6 +10,7 @@
       background: #f7f7f7;
       margin: 0;
       padding: 20px;
+      user-select: none;
     }
 
     h1 {
@@ -50,23 +51,18 @@
       height: 180px;
       object-fit: cover;
       border-radius: 8px;
+      cursor: zoom-in;
+      transition: transform 0.3s ease;
+    }
+
+    .item-card img:hover {
+      transform: scale(1.05);
     }
 
     .low-stock {
       color: red;
       font-weight: bold;
       margin-top: 5px;
-    }
-
-    button {
-      margin-top: 8px;
-      padding: 8px 14px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 14px;
     }
 
     /* Modal Styling */
@@ -80,7 +76,7 @@
       width: 100%;
       height: 100%;
       overflow: auto;
-      background-color: rgba(0,0,0,0.8);
+      background-color: rgba(0,0,0,0.9);
     }
 
     .modal-content {
@@ -89,6 +85,7 @@
       max-width: 90%;
       max-height: 80%;
       border-radius: 10px;
+      cursor: zoom-out;
     }
 
     .close {
@@ -108,7 +105,7 @@
     }
   </style>
 </head>
-<body>
+<body oncontextmenu="return false">
   <h1>Inventory Catalogue</h1>
 
   <div id="controls">
@@ -121,7 +118,7 @@
   <div id="items-container"></div>
 
   <!-- Modal for Image Preview -->
-  <div id="imageModal" class="modal">
+  <div id="imageModal" class="modal" onclick="closeModal()">
     <span class="close" onclick="closeModal()">&times;</span>
     <img class="modal-content" id="modalImage" />
   </div>
@@ -166,13 +163,12 @@
         const imagePath = `images/${imageFile}`;
 
         card.innerHTML = `
-          <img src="${imagePath}" alt="${item["Item Description"]}" />
+          <img src="${imagePath}" alt="${item["Item Description"]}" onclick="openModal('${imagePath}')" />
           <h3>${item["Item Description"]}</h3>
           <p><strong>Code:</strong> ${item["Item Code"]}</p>
           <p><strong>Category:</strong> ${item["Category"]}</p>
           <p><strong>Price:</strong> AED ${parseFloat(item["Price"]).toFixed(2)}</p>
           ${parseFloat(item["Price"]) < 50 ? `<div class="low-stock">⚠️ Low Stock</div>` : ''}
-          <button onclick="openModal('${imagePath}')">🔍 Preview</button>
         `;
         container.appendChild(card);
       });
@@ -194,20 +190,14 @@
     }
 
     function openModal(imageSrc) {
-      document.getElementById("imageModal").style.display = "block";
-      document.getElementById("modalImage").src = imageSrc;
+      const modal = document.getElementById("imageModal");
+      const modalImg = document.getElementById("modalImage");
+      modal.style.display = "block";
+      modalImg.src = imageSrc;
     }
 
     function closeModal() {
       document.getElementById("imageModal").style.display = "none";
-    }
-
-    // Close modal on outside click
-    window.onclick = function(event) {
-      const modal = document.getElementById("imageModal");
-      if (event.target === modal) {
-        modal.style.display = "none";
-      }
     }
   </script>
 </body>
