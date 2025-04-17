@@ -121,9 +121,9 @@
   <div id="items-container"></div>
 
   <!-- Modal -->
-  <div id="imageModal" class="modal">
+  <div id="imageModal" class="modal" onclick="closeModal()">
     <span class="close" onclick="closeModal()">&times;</span>
-    <div class="modal-content-wrapper">
+    <div class="modal-content-wrapper" onclick="event.stopPropagation();">
       <img id="modalImage" class="modal-content" />
       <div class="zoom-controls">
         <button onclick="zoomIn(event)">Zoom In</button>
@@ -204,63 +204,59 @@
       img.src = src;
       img.style.transform = 'scale(1)';
       modal.style.display = 'block';
-      history.pushState({ modalOpen: true }, '', '#preview');
+      history.pushState({ modalOpen: true }, '', '#modal');
     }
 
     function closeModal() {
       const modal = document.getElementById('imageModal');
       modal.style.display = 'none';
-      const img = document.getElementById('modalImage');
-      img.src = '';
-      if (location.hash === "#preview") {
-        history.back();
+      history.pushState({}, '', location.pathname);
+    }
+
+    function zoomIn(event) {
+      event.stopPropagation();
+      zoomLevel += 0.2;
+      document.getElementById('modalImage').style.transform = `scale(${zoomLevel})`;
+    }
+
+    function zoomOut(event) {
+      event.stopPropagation();
+      if (zoomLevel > 0.4) {
+        zoomLevel -= 0.2;
+        document.getElementById('modalImage').style.transform = `scale(${zoomLevel})`;
       }
     }
 
-    function zoomIn(e) {
-      e.stopPropagation();
-      zoomLevel += 0.4;
-      document.getElementById('modalImage').style.transform = 'scale(' + zoomLevel + ')';
-    }
-
-    function zoomOut(e) {
-      e.stopPropagation();
-      zoomLevel = Math.max(1, zoomLevel - 0.4);
-      document.getElementById('modalImage').style.transform = 'scale(' + zoomLevel + ')';
-    }
-
-    function resetZoom(e) {
-      e.stopPropagation();
+    function resetZoom(event) {
+      event.stopPropagation();
       zoomLevel = 1;
       document.getElementById('modalImage').style.transform = 'scale(1)';
     }
 
-    // Click outside image closes modal
-    document.getElementById('imageModal').addEventListener('click', function (e) {
-      if (!e.target.closest('.modal-content-wrapper')) {
+    // Mobile swipe to close
+    let touchStartX = null;
+
+    document.getElementById('imageModal').addEventListener('touchstart', e => {
+      touchStartX = e.changedTouches[0].screenX;
+    });
+
+    document.getElementById('imageModal').addEventListener('touchend', e => {
+      if (touchStartX !== null) {
+        let touchEndX = e.changedTouches[0].screenX;
+        if (Math.abs(touchEndX - touchStartX) > 50) {
+          closeModal();
+        }
+      }
+      touchStartX = null;
+    });
+
+    // Back button support
+    window.addEventListener("popstate", function (event) {
+      const modal = document.getElementById('imageModal');
+      if (modal.style.display === 'block') {
         closeModal();
       }
     });
-
-    // Mobile swipe down to close
-    let startY = 0;
-    document.getElementById('modalImage').addEventListener('touchstart', function(e) {
-      startY = e.touches[0].clientY;
-    });
-
-    document.getElementById('modalImage').addEventListener('touchend', function(e) {
-      const endY = e.changedTouches[0].clientY;
-      if (endY - startY > 100) {
-        closeModal();
-      }
-    });
-
-    // Mobile back button support
-    window.onpopstate = function (event) {
-      if (event.state && event.state.modalOpen) {
-        closeModal();
-      }
-    };
   </script>
 </body>
 </html>
