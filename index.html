@@ -198,14 +198,6 @@
           return;
         }
         allItems = results.data.filter(item => item['Item Code'] && item['Item Description']);
-        const foundCategories = [...new Set(allItems.map(item => item.Category).filter(Boolean))];
-        const suspiciousCategories = foundCategories.filter(cat => 
-          cat && !['BELGIUM - OPEN', 'BELGIUM - WRAPPED', 'FINI - CHOCOLATE', 'ITALIAN - WRAPPED'].includes(cat)
-        );
-        if (suspiciousCategories.length > 0) {
-          document.getElementById('error-message').textContent = `Warning: Unusual categories found: ${suspiciousCategories.join(', ')}. Please check CSV for typos or unquoted commas in Item Description.`;
-          document.getElementById('error-message').style.display = 'block';
-        }
         populateCategories();
         const categoryFilter = document.getElementById('category-filter');
         categoryFilter.value = allItems.some(item => item.Category === 'ITALIAN - WRAPPED')
