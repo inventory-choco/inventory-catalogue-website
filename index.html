@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+html_code = """<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -10,10 +10,12 @@
       background: #f7f7f7;
       margin: 0;
       padding: 20px;
+      user-select: none;
     }
 
     h1 {
       text-align: center;
+      animation: fadeIn 1s ease-in-out;
     }
 
     #controls {
@@ -22,17 +24,21 @@
       flex-wrap: wrap;
       gap: 15px;
       margin-bottom: 20px;
+      animation: slideIn 1s ease-out;
     }
 
     input, select {
       padding: 10px;
       font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
 
     #items-container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 20px;
+      animation: fadeIn 1s ease-in-out;
     }
 
     .item-card {
@@ -41,6 +47,11 @@
       padding: 15px;
       box-shadow: 0 0 8px rgba(0,0,0,0.1);
       text-align: center;
+      transition: transform 0.3s ease;
+    }
+
+    .item-card:hover {
+      transform: translateY(-3px);
     }
 
     .item-card img {
@@ -49,6 +60,11 @@
       object-fit: cover;
       border-radius: 8px;
       cursor: zoom-in;
+      transition: transform 0.3s ease;
+    }
+
+    .item-card img:hover {
+      transform: scale(1.05);
     }
 
     .modal {
@@ -61,58 +77,95 @@
       height: 100%;
       overflow: hidden;
       background-color: rgba(0,0,0,0.9);
+      animation: fadeIn 0.5s ease-in-out;
     }
 
     .modal-content-wrapper {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
       text-align: center;
+      position: relative;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
     .modal-content {
+      display: inline-block;
       max-width: 90%;
       max-height: 80%;
       border-radius: 10px;
-      transition: transform 0.2s ease;
+      cursor: grab;
+      transition: transform 0.3s ease-in-out;
+      transform-origin: center;
     }
 
     .zoom-controls {
-      margin-top: 15px;
+      position: absolute;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      gap: 15px;
+      animation: fadeIn 0.4s ease-in-out;
     }
 
     .zoom-controls button {
-      padding: 8px 12px;
-      font-size: 14px;
-      margin: 0 5px;
-      border: none;
-      border-radius: 5px;
-      background-color: #007bff;
-      color: white;
+      background: #ffffffdd;
+      border: 1px solid #ccc;
+      padding: 10px 14px;
+      font-size: 18px;
       cursor: pointer;
+      border-radius: 8px;
+      transition: background 0.3s, transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
 
     .zoom-controls button:hover {
-      background-color: #0056b3;
+      background: #e2e2e2;
+      transform: scale(1.05);
     }
 
     .close {
       position: absolute;
-      top: 20px;
-      right: 30px;
+      top: 25px;
+      right: 35px;
       color: white;
-      font-size: 30px;
+      font-size: 40px;
       font-weight: bold;
       cursor: pointer;
+      z-index: 100;
+    }
+
+    @keyframes fadeIn {
+      from {opacity: 0; transform: translateY(10px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+
+    @keyframes slideIn {
+      from {opacity: 0; transform: translateY(-20px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+
+    @media (max-width: 600px) {
+      .item-card img {
+        height: 150px;
+      }
+      .zoom-controls {
+        flex-direction: column;
+        gap: 10px;
+      }
     }
   </style>
 </head>
-<body>
+<body oncontextmenu="return false">
   <h1>Inventory Catalogue</h1>
 
   <div id="controls">
-    <input type="text" id="search-bar" placeholder="Search..." oninput="filterItems()">
+    <input type="text" id="search-bar" placeholder="Search items..." oninput="filterItems()"/>
     <select id="category-filter" onchange="filterItems()">
       <option value="">All Categories</option>
     </select>
@@ -120,140 +173,134 @@
 
   <div id="items-container"></div>
 
-  <!-- Modal -->
+  <!-- Modal for Image Preview -->
   <div id="imageModal" class="modal" onclick="closeModal()">
     <span class="close" onclick="closeModal()">&times;</span>
-    <div class="modal-content-wrapper" onclick="event.stopPropagation();">
-      <img id="modalImage" class="modal-content" />
-      <div class="zoom-controls">
-        <button onclick="zoomIn(event)">Zoom In</button>
-        <button onclick="zoomOut(event)">Zoom Out</button>
-        <button onclick="resetZoom(event)">Reset Zoom</button>
-      </div>
+    <div class="zoom-controls">
+      <button onclick="zoomIn(event)">🔍➕ Zoom In</button>
+      <button onclick="zoomOut(event)">🔍➖ Zoom Out</button>
+      <button onclick="resetZoom(event)">🔄 Reset</button>
+    </div>
+    <div class="modal-content-wrapper" onclick="event.stopPropagation()">
+      <img class="modal-content" id="modalImage" />
     </div>
   </div>
 
   <script>
     let allItems = [];
     let zoomLevel = 1;
+    let modalOpen = false;
+    let startX = 0;
+    let endX = 0;
 
     fetch('inventory_data.csv')
-      .then(res => res.text())
-      .then(text => {
-        const lines = text.trim().split('\n');
-        const headers = lines[0].split(',');
-        allItems = lines.slice(1).map(row => {
-          const values = row.split(',');
+      .then(response => response.text())
+      .then(csv => {
+        const lines = csv.trim().split('\\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        allItems = lines.slice(1).map(line => {
+          const data = line.split(',').map(d => d.trim());
           let obj = {};
-          headers.forEach((h, i) => obj[h.trim()] = values[i]?.trim());
+          headers.forEach((h, i) => obj[h] = data[i]);
           return obj;
         });
-
         populateCategories();
-        document.getElementById('category-filter').value = 'ITALIAN - WRAPPED';
+        document.getElementById("category-filter").value = "ITALIAN - WRAPPED";
         filterItems();
       });
 
     function populateCategories() {
-      const filter = document.getElementById('category-filter');
-      const categories = [...new Set(allItems.map(i => i.Category))];
-      categories.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c;
-        opt.textContent = c;
-        filter.appendChild(opt);
+      const categoryFilter = document.getElementById("category-filter");
+      const categories = [...new Set(allItems.map(item => item.Category))].sort();
+      categories.forEach(cat => {
+        const option = document.createElement("option");
+        option.value = cat;
+        option.textContent = cat;
+        categoryFilter.appendChild(option);
       });
     }
 
-    function filterItems() {
-      const search = document.getElementById('search-bar').value.toLowerCase();
-      const category = document.getElementById('category-filter').value;
-      const container = document.getElementById('items-container');
-      container.innerHTML = '';
+    function displayItems(items) {
+      const container = document.getElementById("items-container");
+      container.innerHTML = "";
+      items.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "item-card";
 
-      const filtered = allItems.filter(item => {
-        return (!category || item.Category === category) &&
-               Object.values(item).some(v => v.toLowerCase().includes(search));
-      });
+        const imageFile = item["Image Filename"];
+        const imagePath = `images/${imageFile}`;
 
-      filtered.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'item-card';
-
-        const img = document.createElement('img');
-        img.src = 'images/' + item["Image Filename"];
-        img.alt = item["Item Description"];
-        img.loading = "lazy";
-        img.onclick = function() {
-          openModal(this.src);
-        };
-
-        card.appendChild(img);
-        card.innerHTML += `<h3>${item["Item Description"]}</h3>
-                           <p>Code: ${item["Item Code"]}</p>
-                           <p>Category: ${item["Category"]}</p>
-                           <p>Price: AED ${item["Price"]}</p>`;
+        card.innerHTML = \`
+          <img src="\${imagePath}" loading="lazy" alt="\${item["Item Description"]}" onclick="openModal('\${imagePath}')" />
+          <h3>\${item["Item Description"]}</h3>
+          <p><strong>Code:</strong> \${item["Item Code"]}</p>
+          <p><strong>Category:</strong> \${item["Category"]}</p>
+          <p><strong>Price:</strong> AED \${parseFloat(item["Price"]).toFixed(2)}</p>
+        \`;
         container.appendChild(card);
       });
     }
 
-    function openModal(src) {
+    function filterItems() {
+      const searchTerm = document.getElementById("search-bar").value.toLowerCase();
+      const selectedCategory = document.getElementById("category-filter").value;
+
+      const filtered = allItems.filter(item => {
+        const matchesCategory = selectedCategory ? item.Category === selectedCategory : true;
+        const matchesSearch = Object.values(item).some(value =>
+          value.toLowerCase().includes(searchTerm)
+        );
+        return matchesCategory && matchesSearch;
+      });
+
+      displayItems(filtered);
+    }
+
+    function openModal(imageSrc) {
       zoomLevel = 1;
-      const modal = document.getElementById('imageModal');
-      const img = document.getElementById('modalImage');
-      img.src = src;
-      img.style.transform = 'scale(1)';
-      modal.style.display = 'block';
-      history.pushState({ modalOpen: true }, '', '#modal');
+      modalOpen = true;
+      history.pushState({ modal: true }, "");
+      const modal = document.getElementById("imageModal");
+      const modalImg = document.getElementById("modalImage");
+      modalImg.style.transform = \`scale(\${zoomLevel})\`;
+      modal.style.display = "block";
+      modalImg.src = imageSrc;
     }
 
     function closeModal() {
-      const modal = document.getElementById('imageModal');
-      modal.style.display = 'none';
-      history.pushState({}, '', location.pathname);
+      zoomLevel = 1;
+      modalOpen = false;
+      document.getElementById("imageModal").style.display = "none";
+      if (history.state && history.state.modal) history.back();
     }
 
     function zoomIn(event) {
       event.stopPropagation();
       zoomLevel += 0.2;
-      document.getElementById('modalImage').style.transform = `scale(${zoomLevel})`;
+      document.getElementById("modalImage").style.transform = \`scale(\${zoomLevel})\`;
     }
 
     function zoomOut(event) {
       event.stopPropagation();
-      if (zoomLevel > 0.4) {
-        zoomLevel -= 0.2;
-        document.getElementById('modalImage').style.transform = `scale(${zoomLevel})`;
-      }
+      zoomLevel = Math.max(0.2, zoomLevel - 0.2);
+      document.getElementById("modalImage").style.transform = \`scale(\${zoomLevel})\`;
     }
 
     function resetZoom(event) {
       event.stopPropagation();
       zoomLevel = 1;
-      document.getElementById('modalImage').style.transform = 'scale(1)';
+      document.getElementById("modalImage").style.transform = \`scale(\${zoomLevel})\`;
     }
 
-    // Mobile swipe to close
-    let touchStartX = null;
-
-    document.getElementById('imageModal').addEventListener('touchstart', e => {
-      touchStartX = e.changedTouches[0].screenX;
+    window.addEventListener('popstate', function () {
+      if (modalOpen) closeModal();
     });
 
-    document.getElementById('imageModal').addEventListener('touchend', e => {
-      if (touchStartX !== null) {
-        let touchEndX = e.changedTouches[0].screenX;
-        if (Math.abs(touchEndX - touchStartX) > 50) {
-          closeModal();
-        }
-      }
-      touchStartX = null;
-    });
-
-    // Back button support
-    window.addEventListener("popstate", function (event) {
-      const modal = document.getElementById('imageModal');
-      if (modal.style.display === 'block') {
+    const modalWrapper = document.querySelector('.modal-content-wrapper');
+    modalWrapper.addEventListener('touchstart', e => startX = e.changedTouches[0].screenX);
+    modalWrapper.addEventListener('touchend', e => {
+      endX = e.changedTouches[0].screenX;
+      if (Math.abs(endX - startX) > 100) {
         closeModal();
       }
     });
