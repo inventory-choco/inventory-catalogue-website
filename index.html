@@ -25,11 +25,19 @@
       margin-bottom: 20px;
       animation: slideIn 1s ease-out;
     }
-    input, select {
+    input, select, button {
       padding: 10px;
       font-size: 16px;
       border-radius: 6px;
       border: 1px solid #ccc;
+    }
+    button {
+      cursor: pointer;
+      background: #ffffff;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #e2e2e2;
     }
     #items-container {
       display: grid;
@@ -58,6 +66,9 @@
     }
     .item-card img:hover {
       transform: scale(1.05);
+    }
+    .item-card h3, .item-card p {
+      user-select: text;
     }
     .modal {
       display: none;
@@ -161,6 +172,7 @@
     <select id="category-filter" onchange="filterItems()">
       <option value="">All Categories</option>
     </select>
+    <button onclick="clearCacheAndRefresh()">Clear Cache & Refresh</button>
   </div>
   <div id="items-container"></div>
   <div id="error-message" class="error-message"></div>
@@ -187,6 +199,15 @@
     let dragStartY = 0;
     let imageX = 0;
     let imageY = 0;
+    function clearCacheAndRefresh() {
+      localStorage.clear();
+      sessionStorage.clear();
+      caches.keys().then(keys => {
+        keys.forEach(key => caches.delete(key));
+      }).finally(() => {
+        location.reload();
+      });
+    }
     Papa.parse('inventory_data.csv', {
       download: true,
       header: true,
