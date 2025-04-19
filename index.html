@@ -289,9 +289,9 @@
       <img class="modal-content" id="modalImage" onclick="event.stopPropagation()" oncontextmenu="return false" />
     </div>
   </div>
-  <div id="qaModal" class="qa-modal">
+  <div id="qaModal" class="qa-modal" onclick="closeQAModal()">
     <span class="close" onclick="closeQAModal()">×</span>
-    <div class="qa-container">
+    <div class="qa-container" onclick="event.stopPropagation()">
       <h1>Offline QA</h1>
       <input type="text" id="qa-search" placeholder="Search questions or answers...">
       <div id="qaContent">
@@ -364,9 +364,9 @@
       });
     }
     Papa.parse('inventory_data.csv', {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
+      download: true;
+      header: true;
+      skipEmptyLines: true;
       complete: function(results) {
         if (results.errors.length > 0 || !results.data) {
           document.getElementById('error-message').textContent = 'Error parsing CSV file. Please check the file format.';
@@ -490,6 +490,7 @@
     }
     function openQAModal() {
       document.getElementById('qaModal').style.display = 'block';
+      document.getElementById('qa-button').style.display = 'none';
       history.pushState({ qaModal: true }, '');
       const qaSearch = document.getElementById('qa-search');
       qaSearch.value = '';
@@ -502,6 +503,7 @@
     }
     function closeQAModal() {
       document.getElementById('qaModal').style.display = 'none';
+      document.getElementById('qa-button').style.display = 'block';
     }
     window.addEventListener('popstate', function (event) {
       if (modalOpen && event.state && event.state.modal) {
