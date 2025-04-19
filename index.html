@@ -274,7 +274,7 @@
     <select id="category-filter" onchange="filterItems()">
       <option value="">All Categories</option>
     </select>
-    <button onclick="clearCacheAndRefresh()">Clear Cache & Refresh</button>
+    <button onclick="clearCacheAndRefresh()">Refresh</button>
   </div>
   <div id="items-container"></div>
   <div id="error-message" class="error-message"></div>
@@ -292,7 +292,7 @@
   <div id="qaModal" class="qa-modal" onclick="closeQAModal()">
     <span class="close" onclick="closeQAModal()">×</span>
     <div class="qa-container" onclick="event.stopPropagation()">
-      <h1>Offline QA</h1>
+      <h1>Frequently asked questions</h1>
       <input type="text" id="qa-search" placeholder="Search questions or answers...">
       <div id="qaContent">
         <div class="qa-section" style="animation-delay: 0.1s;">
