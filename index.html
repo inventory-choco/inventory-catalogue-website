@@ -264,17 +264,17 @@
       });
     }
     function filterItems() {
-      const searchTerm = document.getElementById('search-bar').value.toLowerCase();
-      const selectedCategory = document.getElementById('category-filter').value;
-      const filtered = allItems.filter(item => {
-        const matchesSearch = searchTerm
-          ? Object.values(item).some(value => (value || '').toLowerCase().includes(searchTerm))
-          : true;
-        const matchesCategory = searchTerm ? true : selectedCategory ? item.Category === selectedCategory : true;
-        return matchesSearch && matchesCategory;
-      });
-      displayItems(filtered);
-    }
+  const searchTerm = document.getElementById('search-bar').value.toLowerCase();
+  const selectedCategory = document.getElementById('category-filter').value;
+  const filtered = allItems.filter(item => {
+    const matchesSearch = searchTerm
+      ? Object.values(item).some(value => (value || '').toLowerCase().includes(searchTerm))
+      : true;
+    const matchesCategory = searchTerm ? true : selectedCategory ? item.Category === selectedCategory : true;
+    return matchesSearch && matchesCategory;
+  });
+  displayItems(filtered);
+}
     function openModal(imageSrc) {
       zoomLevel = 1;
       zoomClickCount = 0;
