@@ -77,17 +77,6 @@
     .item-card h3, .item-card p {
       user-select: text;
     }
-    .item-card button.print-button {
-      margin-top: 10px;
-      background: #3498db;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      font-size: 14px;
-    }
-    .item-card button.print-button:hover {
-      background: #2980b9;
-    }
     .modal, .qa-modal {
       display: none;
       position: fixed;
@@ -340,7 +329,7 @@
         </div>
         <div class="qa-section" style="animation-delay: 0.9s;">
           <h3>9. How can branches ensure smooth operations and customer satisfaction during peak seasons like Ramadan and Eid using the new method?</h3>
-          <p>During peak seasons, branches should focus on preparing more ready-made chocolate boxes based on top-selling and customer-preferred <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">flavors</a>. Minimizing customized orders during this time will help save time and ensure service remains fast and efficient—just like or better than before.</p>
+          <p>During peak seasons, branches should focus on preparing more ready-made chocolate boxes based on top-selling and customer-preferred <a href="https://inventory-choco.github.io/inventory-catalog ue-website" target="_blank">flavors</a>. Minimizing customized orders during this time will help save time and ensure service remains fast and efficient—just like or better than before.</p>
         </div>
         <div class="qa-section" style="animation-delay: 1s;">
           <h3>10. Is it possible to use the previous <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">item</a> <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">codes</a> along with the new <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">flavor</a>-wise system to ease the transition?</h3>
@@ -435,86 +424,9 @@
           <p><strong>Barcode:</strong> ${item['Barcode'] || 'N/A'}</p>
           <p><strong>Category:</strong> ${item['Category'] || 'Uncategorized'}</p>
           <p><strong>Price:</strong> ${price}</p>
-          <button class="print-button" onclick='printItem(${JSON.stringify(item)})'>Print</button>
         `;
         container.appendChild(card);
       });
-    }
-    function printItem(item) {
-      console.log('printItem called with:', item);
-      const copies = prompt('Enter number of copies to print:', '1');
-      let numCopies = parseInt(copies);
-      if (isNaN(numCopies) || numCopies <= 0) {
-        numCopies = 1;
-        console.log('Invalid input, defaulting to 1 copy');
-      }
-      console.log('Number of copies:', numCopies);
-      try {
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-          console.error('Failed to open print window. Check pop-up blocker.');
-          alert('Failed to open print window. Please allow pop-ups for this site.');
-          return;
-        }
-        let content = `
-          <html>
-            <head>
-              <title>Print Item - ${item['Item Description'] || 'Item'}</title>
-              <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .print-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-                .print-item { display: flex; gap: 10px; align-items: center; border: 1px solid #ccc; padding: 10px; border-radius: 8px; }
-                .print-image img { max-width: 100px; height: auto; border-radius: 4px; }
-                .print-image img.error { display: none; }
-                .print-image .error-text { display: none; color: red; }
-                .print-image img.error + .error-text { display: block; }
-                .print-details { font-size: 12px; }
-                .print-details p { margin: 3px 0; }
-                @media print {
-                  body { margin: 0; }
-                  .print-item { page-break-inside: avoid; }
-                  .print-grid { gap: 10px; }
-                }
-              </style>
-            </head>
-            <body>
-              <div class="print-grid">
-        `;
-        for (let i = 0; i < numCopies; i++) {
-          content += `
-            <div class="print-item">
-              <div class="print-image">
-                <img src="images/${item['Image Filename'] || 'default.jpg'}" alt="${item['Item Description'] || 'Item'}" onerror="this.className='error';"/>
-                <span class="error-text">Image not found</span>
-              </div>
-              <div class="print-details">
-                <p><strong>Item Description:</strong> ${item['Item Description'] || 'N/A'}</p>
-                <p><strong>Item Code:</strong> ${item['Item Code'] || 'N/A'}</p>
-                <p><strong>Barcode:</strong> ${item['Barcode'] || 'N/A'}</p>
-                <p><strong>Category:</strong> ${item['Category'] || 'Uncategorized'}</p>
-                <p><strong>Price:</strong> ${item['Price'] && !isNaN(parseFloat(item['Price'])) ? `AED ${parseFloat(item['Price']).toFixed(2)}` : 'AED N/A'}</p>
-              </div>
-            </div>
-          `;
-        }
-        content += `
-              </div>
-              <script>
-                window.onload = () => {
-                  console.log('Print window loaded');
-                  window.print();
-                  window.close();
-                };
-              </script>
-            </body>
-          </html>
-        `;
-        printWindow.document.write(content);
-        printWindow.document.close();
-      } catch (error) {
-        console.error('Error in printItem:', error);
-        alert('An error occurred while generating the print page. Check the console for details.');
-      }
     }
     function filterItems() {
       const searchTerm = document.getElementById('search-bar').value.toLowerCase();
