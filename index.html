@@ -422,7 +422,7 @@
           ? colors.map(color => {
               const isValidColor = document.createElement('div').style.backgroundColor = color;
               const hex = isValidColor ? color : '#808080';
-              return `<span style="display: inline-block; width: 20px; height: 20px; border-radius: 50%; background-color: ${hex}; margin: 0 4px; border: 1px solid #ccc;" title="${color}"></span>`;
+              return `<span style="display: inline-block; width: 24px; height: 24px; border-radius: 50%; background-color: ${hex}; margin: 0 4px; border: 1px solid #ccc;" title="${color}"></span>`;
             }).join('')
           : 'N/A';
         const flavor = item['Flavor'] || 'N/A';
