@@ -329,7 +329,7 @@
         </div>
         <div class="qa-section" style="animation-delay: 0.9s;">
           <h3>9. How can branches ensure smooth operations and customer satisfaction during peak seasons like Ramadan and Eid using the new method?</h3>
-          <p>During peak seasons, branches should focus on preparing more ready-made chocolate boxes based on top-selling and customer-preferred <a href="https://inventory-choco.github.io/inventory-catalog ue-website" target="_blank">flavors</a>. Minimizing customized orders during this time will help save time and ensure service remains fast and efficient—just like or better than before.</p>
+          <p>During peak seasons, branches should focus on preparing more ready-made chocolate boxes based on top-selling and customer-preferred <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">flavors</a>. Minimizing customized orders during this time will help save time and ensure service remains fast and efficient—just like or better than before.</p>
         </div>
         <div class="qa-section" style="animation-delay: 1s;">
           <h3>10. Is it possible to use the previous <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">item</a> <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">codes</a> along with the new <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">flavor</a>-wise system to ease the transition?</h3>
@@ -417,6 +417,15 @@
         const price = item['Price'] && !isNaN(parseFloat(item['Price']))
           ? `AED ${parseFloat(item['Price']).toFixed(2)}`
           : 'AED N/A';
+        const colors = item['Color'] ? item['Color'].split(',').map(c => c.trim()) : [];
+        const colorDisplay = colors.length > 0
+          ? colors.map(color => {
+              const isValidColor = document.createElement('div').style.backgroundColor = color;
+              const hex = isValidColor ? color : '#808080';
+              return `<span style="display: inline-block; width: 20px; height: 20px; border-radius: 50%; background-color: ${hex}; margin: 0 4px; border: 1px solid #ccc;" title="${color}"></span>`;
+            }).join('')
+          : 'N/A';
+        const flavor = item['Flavor'] || 'N/A';
         card.innerHTML = `
           <img src="${imagePath}" loading="lazy" alt="${item['Item Description'] || 'Item'}" onclick="openModal('${imagePath}')" oncontextmenu="return false" />
           <h3>${item['Item Description'] || 'Unknown Item'}</h3>
@@ -424,6 +433,8 @@
           <p><strong>Barcode:</strong> ${item['Barcode'] || 'N/A'}</p>
           <p><strong>Category:</strong> ${item['Category'] || 'Uncategorized'}</p>
           <p><strong>Price:</strong> ${price}</p>
+          <p><strong>Color:</strong> ${colorDisplay}</p>
+          <p><strong>Flavor:</strong> ${flavor}</p>
         `;
         container.appendChild(card);
       });
