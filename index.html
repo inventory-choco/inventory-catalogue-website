@@ -419,21 +419,37 @@
           : 'AED N/A';
         const colors = item['Color'] ? item['Color'].split(',').map(c => c.trim()) : [];
         const colorDisplay = colors.length > 0
-          ? colors.map(color => {
-              // Normalize color: lowercase, replace spaces with hyphens
-              const normalizedColor = color.toLowerCase().replace(/\s+/g, '-');
-              // Create a temporary div to test if the color is valid
-              const tempDiv = document.createElement('div');
-              tempDiv.style.display = 'none';
-              tempDiv.style.backgroundColor = normalizedColor;
-              document.body.appendChild(tempDiv);
-              const computedColor = window.getComputedStyle(tempDiv).backgroundColor;
-              document.body.removeChild(tempDiv);
-              // Check if computedColor is not empty or transparent
-              const isValidColor = computedColor && computedColor !== 'rgba(0, 0, 0, 0)' && computedColor !== 'transparent';
-              const displayColor = isValidColor ? normalizedColor : '#808080';
-              return `<span style="display: inline-block; width: 28px; height: 28px; border-radius: 50%; background-color: ${displayColor}; margin: 0 4px; border: 1px solid #ccc;" title="${color}"></span>`;
-            }).join('')
+          ? colors.length === 2
+            ? (() => {
+                const [color1, color2] = colors;
+                const normalizedColor1 = color1.toLowerCase().replace(/\s+/g, '-');
+                const normalizedColor2 = color2.toLowerCase().replace(/\s+/g, '-');
+                const tempDiv = document.createElement('div');
+                tempDiv.style.display = 'none';
+                document.body.appendChild(tempDiv);
+                tempDiv.style.backgroundColor = normalizedColor1;
+                const computedColor1 = window.getComputedStyle(tempDiv).backgroundColor;
+                tempDiv.style.backgroundColor = normalizedColor2;
+                const computedColor2 = window.getComputedStyle(tempDiv).backgroundColor;
+                document.body.removeChild(tempDiv);
+                const isValidColor1 = computedColor1 && computedColor1 !== 'rgba(0, 0, 0, 0)' && computedColor1 !== 'transparent';
+                const isValidColor2 = computedColor2 && computedColor2 !== 'rgba(0, 0, 0, 0)' && computedColor2 !== 'transparent';
+                const displayColor1 = isValidColor1 ? normalizedColor1 : '#808080';
+                const displayColor2 = isValidColor2 ? normalizedColor2 : '#808080';
+                return `<span style="display: inline-block; width: 32px; height: 32px; border-radius: 50%; background: conic-gradient(${displayColor1} 0deg 180deg, ${displayColor2} 180deg 360deg); margin: 0 4px; border: 1px solid #ccc;" title="${color1}, ${color2}"></span>`;
+              })()
+            : colors.map(color => {
+                const normalizedColor = color.toLowerCase().replace(/\s+/g, '-');
+                const tempDiv = document.createElement('div');
+                tempDiv.style.display = 'none';
+                tempDiv.style.backgroundColor = normalizedColor;
+                document.body.appendChild(tempDiv);
+                const computedColor = window.getComputedStyle(tempDiv).backgroundColor;
+                document.body.removeChild(tempDiv);
+                const isValidColor = computedColor && computedColor !== 'rgba(0, 0, 0, 0)' && computedColor !== 'transparent';
+                const displayColor = isValidColor ? normalizedColor : '#808080';
+                return `<span style="display: inline-block; width: 32px; height: 32px; border-radius: 50%; background-color: ${displayColor}; margin: 0 4px; border: 1px solid #ccc;" title="${color}"></span>`;
+              }).join('')
           : 'N/A';
         const flavor = item['Flavor'] || 'N/A';
         card.innerHTML = `
