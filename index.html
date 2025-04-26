@@ -31,14 +31,16 @@
       font-size: 16px;
       border-radius: 6px;
       border: 1px solid #ccc;
+      transition: transform 0.2s ease-in-out;
     }
     button {
       cursor: pointer;
       background: #ffffff;
       transition: background 0.3s;
     }
-    button:hover {
+    button:hover, #search-bar:hover, #category-filter:hover {
       background: #e2e2e2;
+      animation: pulse 0.5s ease;
     }
     #qa-button {
       position: fixed;
@@ -51,17 +53,25 @@
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 20px;
       animation: fadeIn 1s ease-in-out;
+      transition: opacity 0.3s ease;
+    }
+    #items-container.filtering {
+      opacity: 0.3;
     }
     .item-card {
-      background: white;
+      background: #1e3a8a;
+      color: #ffffff;
       border-radius: 10px;
       padding: 15px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      border: 1px solid #2b6cb0;
       text-align: center;
-      transition: transform 0.3s ease;
+      transition: transform 0.3s ease-in-out, background 0.3s ease-in-out;
+      opacity: 0;
     }
     .item-card:hover {
-      transform: translateY(-5px);
+      transform: translateY(-8px) scale(1.02);
+      background: #2b6cb0;
     }
     .item-card img {
       width: 100%;
@@ -77,6 +87,14 @@
     .item-card h3, .item-card p {
       user-select: text;
     }
+    .item-card p.category {
+      color: red;
+    }
+    .highlight {
+      background-color: #fef08a;
+      font-weight: bold;
+      color: #1e3a8a;
+    }
     .modal, .qa-modal {
       display: none;
       position: fixed;
@@ -87,7 +105,7 @@
       height: 100%;
       overflow: auto;
       background-color: rgba(0,0,0,0.9);
-      animation: fadeIn 0.5s ease-in-out;
+      animation: zoomIn 0.5s ease-in-out;
     }
     .modal-content-wrapper {
       text-align: center;
@@ -251,6 +269,15 @@
       from { transform: translateY(20px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
     }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    @keyframes zoomIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
     @media (max-width: 600px) {
       .item-card img {
         height: 150px;
@@ -405,13 +432,25 @@
         categoryFilter.appendChild(option);
       });
     }
-    function displayItems(items) {
+    function highlightText(text, keywords) {
+      if (!keywords.length || !text) return text;
+      let highlighted = text;
+      keywords.forEach(keyword => {
+        const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${escapedKeyword})`, 'gi');
+        highlighted = highlighted.replace(regex, '<span class="highlight">$1</span>');
+      });
+      return highlighted;
+    }
+    function displayItems(items, keywords = []) {
       console.log('Displaying Items:', items);
       const container = document.getElementById('items-container');
       container.innerHTML = '';
-      items.forEach(item => {
+      container.classList.remove('filtering');
+      items.forEach((item, index) => {
         const card = document.createElement('div');
         card.className = 'item-card';
+        card.style.animation = `fadeInUp 0.5s ease forwards ${index * 0.1}s`;
         const imageFile = item['Image Filename'] || 'default.jpg';
         const imagePath = `images/${imageFile}`;
         const price = item['Price'] && !isNaN(parseFloat(item['Price']))
@@ -453,15 +492,16 @@
               })()
           : 'N/A';
         const flavor = item['Flavor'] || 'N/A';
+        const colorText = colors.length > 0 ? colors.join(', ') : 'N/A';
         card.innerHTML = `
           <img src="${imagePath}" loading="lazy" alt="${item['Item Description'] || 'Item'}" onclick="openModal('${imagePath}')" oncontextmenu="return false" />
-          <h3>${item['Item Description'] || 'Unknown Item'}</h3>
-          <p><strong>Code:</strong> ${item['Item Code'] || 'N/A'}</p>
-          <p><strong>Barcode:</strong> ${item['Barcode'] || 'N/A'}</p>
-          <p><strong>Category:</strong> ${item['Category'] || 'Uncategorized'}</p>
-          <p><strong>Price:</strong> ${price}</p>
-          <p><strong>Color:</strong> ${colorDisplay}</p>
-          <p><strong>Flavor:</strong> ${flavor}</p>
+          <h3>${highlightText(item['Item Description'] || 'Unknown Item', keywords)}</h3>
+          <p><strong>Code:</strong> ${highlightText(item['Item Code'] || 'N/A', keywords)}</p>
+          <p><strong>Barcode:</strong> ${highlightText(item['Barcode'] || 'N/A', keywords)}</p>
+          <p class="category"><strong>Category:</strong> ${highlightText(item['Category'] || 'Uncategorized', keywords)}</p>
+          <p><strong>Price:</strong> ${highlightText(price, keywords)}</p>
+          <p><strong>Color:</strong> ${colorDisplay} ${highlightText(colorText, keywords)}</p>
+          <p><strong>Flavor:</strong> ${highlightText(flavor, keywords)}</p>
         `;
         container.appendChild(card);
       });
@@ -470,6 +510,8 @@
       const searchTerm = document.getElementById('search-bar').value.toLowerCase();
       const selectedCategory = document.getElementById('category-filter').value;
       const keywords = searchTerm.trim().split(/\s+/).filter(Boolean);
+      const container = document.getElementById('items-container');
+      container.classList.add('filtering');
       const filtered = allItems.filter(item => {
         const matchesSearch = keywords.length > 0
           ? keywords.every(keyword => 
@@ -480,7 +522,7 @@
         return matchesSearch && matchesCategory;
       });
       console.log('Filtered Items:', filtered);
-      displayItems(filtered);
+      setTimeout(() => displayItems(filtered, keywords), 300);
     }
     function openModal(imageSrc) {
       zoomLevel = 1;
