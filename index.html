@@ -419,26 +419,27 @@
           : 'AED N/A';
         const colors = item['Color'] ? item['Color'].split(',').map(c => c.trim()) : [];
         const colorDisplay = colors.length > 0
-          ? colors.length === 2
+          ? colors.length >= 2
             ? (() => {
-                const [color1, color2] = colors;
-                const normalizedColor1 = color1.toLowerCase().replace(/\s+/g, '-');
-                const normalizedColor2 = color2.toLowerCase().replace(/\s+/g, '-');
                 const tempDiv = document.createElement('div');
                 tempDiv.style.display = 'none';
                 document.body.appendChild(tempDiv);
-                tempDiv.style.backgroundColor = normalizedColor1;
-                const computedColor1 = window.getComputedStyle(tempDiv).backgroundColor;
-                tempDiv.style.backgroundColor = normalizedColor2;
-                const computedColor2 = window.getComputedStyle(tempDiv).backgroundColor;
+                const colorAngles = colors.map((color, index) => {
+                  const normalizedColor = color.toLowerCase().replace(/\s+/g, '-');
+                  tempDiv.style.backgroundColor = normalizedColor;
+                  const computedColor = window.getComputedStyle(tempDiv).backgroundColor;
+                  const isValidColor = computedColor && computedColor !== 'rgba(0, 0, 0, 0)' && computedColor !== 'transparent';
+                  const displayColor = isValidColor ? normalizedColor : '#808080';
+                  const angleStart = (index * 360) / colors.length;
+                  const angleEnd = ((index + 1) * 360) / colors.length;
+                  return `${displayColor} ${angleStart}deg ${angleEnd}deg`;
+                });
                 document.body.removeChild(tempDiv);
-                const isValidColor1 = computedColor1 && computedColor1 !== 'rgba(0, 0, 0, 0)' && computedColor1 !== 'transparent';
-                const isValidColor2 = computedColor2 && computedColor2 !== 'rgba(0, 0, 0, 0)' && computedColor2 !== 'transparent';
-                const displayColor1 = isValidColor1 ? normalizedColor1 : '#808080';
-                const displayColor2 = isValidColor2 ? normalizedColor2 : '#808080';
-                return `<span style="display: inline-block; width: 32px; height: 32px; border-radius: 50%; background: conic-gradient(${displayColor1} 0deg 180deg, ${displayColor2} 180deg 360deg); margin: 0 4px; border: 1px solid #ccc;" title="${color1}, ${color2}"></span>`;
+                const gradient = `conic-gradient(${colorAngles.join(', ')})`;
+                return `<span style="display: inline-block; width: 36px; height: 36px; border-radius: 50%; background: ${gradient}; margin: 0 4px; border: 1px solid #ccc;" title="${colors.join(', ')}"></span>`;
               })()
-            : colors.map(color => {
+            : (() => {
+                const color = colors[0];
                 const normalizedColor = color.toLowerCase().replace(/\s+/g, '-');
                 const tempDiv = document.createElement('div');
                 tempDiv.style.display = 'none';
@@ -448,8 +449,8 @@
                 document.body.removeChild(tempDiv);
                 const isValidColor = computedColor && computedColor !== 'rgba(0, 0, 0, 0)' && computedColor !== 'transparent';
                 const displayColor = isValidColor ? normalizedColor : '#808080';
-                return `<span style="display: inline-block; width: 32px; height: 32px; border-radius: 50%; background-color: ${displayColor}; margin: 0 4px; border: 1px solid #ccc;" title="${color}"></span>`;
-              }).join('')
+                return `<span style="display: inline-block; width: 36px; height: 36px; border-radius: 50%; background-color: ${displayColor}; margin: 0 4px; border: 1px solid #ccc;" title="${color}"></span>`;
+              })()
           : 'N/A';
         const flavor = item['Flavor'] || 'N/A';
         card.innerHTML = `
