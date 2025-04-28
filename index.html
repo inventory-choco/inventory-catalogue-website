@@ -59,8 +59,8 @@
       opacity: 0.3;
     }
     .item-card {
-      background: #b0e0e6;
-      color: Black;
+      background: #87ceeb;
+      color: #ffffff;
       border-radius: 10px;
       padding: 15px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
@@ -71,7 +71,7 @@
     }
     .item-card:hover {
       transform: translateY(-8px) scale(1.02);
-      background: #2b6cb0;
+      background: #4682b4;
     }
     .item-card img {
       width: 100%;
@@ -297,7 +297,7 @@
   <h1>Inventory Catalogue</h1>
   <button id="qa-button">Show QA</button>
   <div id="controls">
-    <input type="text" id="search-bar" placeholder="Search items..." oninput="filterItems()"/>
+    <input type="text" id="search-bar" placeholder="Search items..."/>
     <select id="category-filter" onchange="filterItems()">
       <option value="">All Categories</option>
     </select>
@@ -375,12 +375,13 @@
     let zoomClickCount = 0;
     let modalOpen = false;
     let startY = 0;
-    let endY = 0;
+    let endY =彼此: none;
     let isDragging = false;
     let dragStartX = 0;
     let dragStartY = 0;
     let imageX = 0;
     let imageY = 0;
+
     function clearCacheAndRefresh() {
       localStorage.clear();
       sessionStorage.clear();
@@ -390,6 +391,19 @@
         location.reload();
       });
     }
+
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
     Papa.parse('inventory_data.csv', {
       download: true,
       header: true,
@@ -421,6 +435,7 @@
         document.getElementById('error-message').style.display = 'block';
       }
     });
+
     function populateCategories() {
       const categoryFilter = document.getElementById('category-filter');
       const categories = [...new Set(allItems.map(item => item.Category).filter(Boolean))].sort();
@@ -432,6 +447,7 @@
         categoryFilter.appendChild(option);
       });
     }
+
     function highlightText(text, keywords) {
       if (!keywords.length || !text) return text;
       let highlighted = text;
@@ -442,6 +458,7 @@
       });
       return highlighted;
     }
+
     function displayItems(items, keywords = []) {
       console.log('Displaying Items:', items);
       const container = document.getElementById('items-container');
@@ -493,19 +510,26 @@
           : 'N/A';
         const flavor = item['Flavor'] || 'N/A';
         const colorText = colors.length > 0 ? colors.join(', ') : 'N/A';
+        const uom = item['UOM'] || 'N/A';
+        const weight = item['Weight Per Piece(In Grams)'] && !isNaN(parseFloat(item['Weight Per Piece(In Grams)']))
+          ? `${parseFloat(item['Weight Per Piece(In Grams)']).toFixed(2)} g`
+          : 'N/A';
         card.innerHTML = `
           <img src="${imagePath}" loading="lazy" alt="${item['Item Description'] || 'Item'}" onclick="openModal('${imagePath}')" oncontextmenu="return false" />
           <h3>${highlightText(item['Item Description'] || 'Unknown Item', keywords)}</h3>
           <p><strong>Code:</strong> ${highlightText(item['Item Code'] || 'N/A', keywords)}</p>
           <p><strong>Barcode:</strong> ${highlightText(item['Barcode'] || 'N/A', keywords)}</p>
           <p class="category"><strong>Category:</strong> ${highlightText(item['Category'] || 'Uncategorized', keywords)}</p>
+          <p><strong>UOM:</strong> ${highlightText(uom, keywords)}</p>
           <p><strong>Price:</strong> ${highlightText(price, keywords)}</p>
           <p><strong>Color:</strong> ${colorDisplay} ${highlightText(colorText, keywords)}</p>
           <p><strong>Flavor:</strong> ${highlightText(flavor, keywords)}</p>
+          <p><strong>Weight Per Piece:</strong> ${highlightText(weight, keywords)}</p>
         `;
         container.appendChild(card);
       });
     }
+
     function filterItems() {
       const searchTerm = document.getElementById('search-bar').value.toLowerCase();
       const selectedCategory = document.getElementById('category-filter').value;
@@ -524,6 +548,10 @@
       console.log('Filtered Items:', filtered);
       setTimeout(() => displayItems(filtered, keywords), 300);
     }
+
+    const debouncedFilterItems = debounce(filterItems, 500);
+    document.getElementById('search-bar').addEventListener('input', debouncedFilterItems);
+
     function openModal(imageSrc) {
       zoomLevel = 1;
       zoomClickCount = 0;
@@ -539,6 +567,7 @@
       modal.style.display = 'block';
       modalImg.src = imageSrc;
     }
+
     function closeModal() {
       zoomLevel = 1;
       zoomClickCount = 0;
@@ -550,18 +579,21 @@
       modalImg.style.left = '0px';
       modalImg.style.top = '0px';
     }
+
     function zoomIn(event) {
       event.stopPropagation();
       zoomClickCount++;
       zoomLevel += 0.2 + 0.05 * zoomClickCount;
       updateImageTransform();
     }
+
     function zoomOut(event) {
       event.stopPropagation();
       zoomClickCount++;
       zoomLevel = Math.max(0.1, zoomLevel - (0.2 + 0.05 * zoomClickCount));
       updateImageTransform();
     }
+
     function resetZoom(event) {
       event.stopPropagation();
       zoomLevel = 1;
@@ -573,12 +605,14 @@
       modalImg.style.left = '0px';
       modalImg.style.top = '0px';
     }
+
     function updateImageTransform() {
       const modalImg = document.getElementById('modalImage');
       modalImg.style.transform = `scale(${zoomLevel})`;
       modalImg.style.left = `${imageX}px`;
       modalImg.style.top = `${imageY}px`;
     }
+
     function openQAModal() {
       document.getElementById('qaModal').style.display = 'block';
       document.getElementById('qa-button').style.display = 'none';
@@ -592,10 +626,12 @@
         section.style.animation = `fadeInUp 0.5s ease forwards`;
       });
     }
+
     function closeQAModal() {
       document.getElementById('qaModal').style.display = 'none';
       document.getElementById('qa-button').style.display = 'block';
     }
+
     window.addEventListener('popstate', function (event) {
       if (modalOpen && event.state && event.state.modal) {
         closeModal();
@@ -604,7 +640,9 @@
         closeQAModal();
       }
     });
+
     document.getElementById('qa-button').addEventListener('click', openQAModal);
+
     const qaSearch = document.getElementById('qa-search');
     const qaSections = document.querySelectorAll('.qa-section');
     qaSearch.addEventListener('input', function() {
@@ -620,16 +658,19 @@
         }
       });
     });
+
     const modalWrapper = document.querySelector('.modal-content-wrapper');
     modalWrapper.addEventListener('touchstart', e => {
       startY = e.changedTouches[0].screenY;
     });
+
     modalWrapper.addEventListener('touchend', e => {
       endY = e.changedTouches[0].screenY;
       if (Math.abs(endY - startY) > 150 && !isDragging) {
         closeModal();
       }
     });
+
     const modalImg = document.getElementById('modalImage');
     modalImg.addEventListener('mousedown', startDragging);
     modalImg.addEventListener('touchstart', startDragging);
@@ -648,6 +689,7 @@
       e.preventDefault();
       return false;
     });
+
     function startDragging(e) {
       e.preventDefault();
       isDragging = true;
@@ -655,6 +697,7 @@
       dragStartY = (e.clientY || e.changedTouches[0].clientY) - imageY;
       modalImg.style.cursor = 'grabbing';
     }
+
     function dragImage(e) {
       if (!isDragging) return;
       e.preventDefault();
@@ -670,6 +713,7 @@
       modalImg.style.left = `${imageX}px`;
       modalImg.style.top = `${imageY}px`;
     }
+
     function stopDragging() {
       isDragging = false;
       modalImg.style.cursor = 'grab';
