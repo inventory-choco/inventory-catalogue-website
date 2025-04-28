@@ -565,7 +565,7 @@
             card.className = 'item-card';
             card.style.animation = `fadeInUp 0.3s ease forwards ${i * 0.05}s`;
             const imageFile = item['Image Filename'] || 'images/default.jpg';
-            const imagePath = imageFile;
+            const imagePath = imageFile && imageFile !== 'images/default.jpg' ? 'images/' + imageFile : imageFile;
             const price = item['Price'] && !isNaN(parseFloat(item['Price']))
               ? `AED ${parseFloat(item['Price']).toFixed(2)}`
               : 'AED N/A';
@@ -611,7 +611,7 @@
               ? `${parseFloat(item['Weight Per Piece(In Grams)']).toFixed(2)} g`
               : 'N/A';
             card.innerHTML = `
-              <img src="${imagePath}" loading="lazy" alt="${item['Item Description'] || 'Item'}" onclick="openModal('${imagePath}')" oncontextmenu="return false" />
+              <img src="${imagePath}" loading="lazy" alt="${item['Item Description'] || 'Item'}" onerror="console.warn('Failed to load image: ${imagePath} for item ${item['Item Code'] || 'unknown'}'); this.src='images/default.jpg'" onclick="openModal('${imagePath}')" oncontextmenu="return false" />
               <h3>${highlightText(item['Item Description'] || 'Unknown Item', keywords)}</h3>
               <p><strong>Code:</strong> ${highlightText(item['Item Code'] || 'N/A', keywords)}</p>
               <p><strong>Barcode:</strong> ${highlightText(item['Barcode'] || 'N/A', keywords)}</p>
@@ -868,6 +868,11 @@
           section.classList.add('qa-hidden');
         }
       });
+    });
+
+    const modalWrapper = document.querySelector('.modal-content-wrapper');
+    modalWrapper.addEventListener('touchstart', e => {
+      startY = e.changedTouches[0].screenY;
     });
 
     const modalWrapper = document.querySelector('.modal-content-wrapper');
