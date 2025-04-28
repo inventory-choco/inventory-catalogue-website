@@ -6,6 +6,7 @@
   <title>Inventory Catalogue</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="preload" href="images/default.jpg" as="image">
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -60,18 +61,19 @@
     }
     .item-card {
       background: #87ceeb;
-      color: #ffffff;
+      color: #000000;
       border-radius: 10px;
       padding: 15px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
       border: 1px solid #2b6cb0;
       text-align: center;
-      transition: transform 0.3s ease-in-out, background 0.3s ease-in-out;
+      transition: transform 0.3s ease-in-out, background 0.3s ease-in-out, color 0.3s ease-in-out;
       opacity: 0;
     }
     .item-card:hover {
       transform: translateY(-8px) scale(1.02);
       background: #4682b4;
+      color: #ffffff;
     }
     .item-card img {
       width: 100%;
@@ -381,6 +383,8 @@
     let dragStartY = 0;
     let imageX = 0;
     let imageY = 0;
+    const cacheKey = 'inventory_data_cache';
+    const cacheTTL = 24 * 60 * 60 * 1000; // 24 hours
 
     function clearCacheAndRefresh() {
       localStorage.clear();
@@ -404,40 +408,80 @@
       };
     }
 
-    Papa.parse('inventory_data.csv', {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      complete: function(results) {
-        console.log('PapaParse Raw Data:', results.data);
-        console.log('CSV Headers:', results.meta.fields);
-        if (results.errors.length > 0 || !results.data) {
-          console.error('CSV Parsing Errors:', results.errors);
-          document.getElementById('error-message').textContent = 'Error parsing CSV file. Please check the file format or console for details.';
-          document.getElementById('error-message').style.display = 'block';
-          return;
+    function loadCachedData() {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < cacheTTL) {
+          console.log('Using cached data');
+          return data;
         }
-        allItems = results.data.filter(item => item && Object.keys(item).length > 0);
-        allItems.forEach((item, index) => {
-          if (!item['Item Code'] || !item['Item Description']) {
-            console.warn(`Row ${index + 2} is missing Item Code or Item Description:`, item);
-          }
-        });
-        console.log('Filtered Items:', allItems);
-        if (allItems.length === 0) {
-          document.getElementById('error-message').textContent = 'No valid items found in CSV. Ensure it has data rows.';
-          document.getElementById('error-message').style.display = 'block';
-          return;
-        }
-        populateCategories();
-        filterItems();
-      },
-      error: function(error) {
-        console.error('PapaParse Error:', error);
-        document.getElementById('error-message').textContent = 'Failed to load inventory_data.csv. Check file path or network connection.';
-        document.getElementById('error-message').style.display = 'block';
       }
-    });
+      return null;
+    }
+
+    function saveCachedData(data) {
+      localStorage.setItem(cacheKey, JSON.stringify({
+        data,
+        timestamp: Date.now()
+      }));
+    }
+
+    const cachedData = loadCachedData();
+    if (cachedData) {
+      console.time('Load Cached Data');
+      allItems = cachedData;
+      console.log('Cached Items:', allItems);
+      populateCategories();
+      const categoryFilter = document.getElementById('category-filter');
+      categoryFilter.value = allItems.some(item => item.Category === 'ITALIAN - WRAPPED') ? 'ITALIAN - WRAPPED' : '';
+      filterItems();
+      console.timeEnd('Load Cached Data');
+    } else {
+      console.time('Parse CSV');
+      Papa.parse('inventory_data.csv', {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        worker: true,
+        complete: function(results) {
+          console.log('PapaParse Raw Data:', results.data);
+          console.log('CSV Headers:', results.meta.fields);
+          if (results.errors.length > 0 || !results.data) {
+            console.error('CSV Parsing Errors:', results.errors);
+            document.getElementById('error-message').textContent = 'Error parsing CSV file. Please check the file format or console for details.';
+            document.getElementById('error-message').style.display = 'block';
+            console.timeEnd('Parse CSV');
+            return;
+          }
+          allItems = results.data.filter(item => item && Object.keys(item).length > 0);
+          allItems.forEach((item, index) => {
+            if (!item['Item Code'] || !item['Item Description']) {
+              console.warn(`Row ${index + 2} is missing Item Code or Item Description:`, item);
+            }
+          });
+          console.log('Filtered Items:', allItems);
+          if (allItems.length === 0) {
+            document.getElementById('error-message').textContent = 'No valid items found in CSV. Ensure it has data rows.';
+            document.getElementById('error-message').style.display = 'block';
+            console.timeEnd('Parse CSV');
+            return;
+          }
+          saveCachedData(allItems);
+          populateCategories();
+          const categoryFilter = document.getElementById('category-filter');
+          categoryFilter.value = allItems.some(item => item.Category === 'ITALIAN - WRAPPED') ? 'ITALIAN - WRAPPED' : '';
+          filterItems();
+          console.timeEnd('Parse CSV');
+        },
+        error: function(error) {
+          console.error('PapaParse Error:', error);
+          document.getElementById('error-message').textContent = 'Failed to load inventory_data.csv. Check file path or network connection.';
+          document.getElementById('error-message').style.display = 'block';
+          console.timeEnd('Parse CSV');
+        }
+      });
+    }
 
     function populateCategories() {
       const categoryFilter = document.getElementById('category-filter');
@@ -463,84 +507,109 @@
     }
 
     function displayItems(items, keywords = []) {
+      console.time('Render Items');
       console.log('Displaying Items:', items);
       const container = document.getElementById('items-container');
       container.innerHTML = '';
       container.classList.remove('filtering');
-      items.forEach((item, index) => {
-        try {
-          const card = document.createElement('div');
-          card.className = 'item-card';
-          card.style.animation = `fadeInUp 0.5s ease forwards ${index * 0.1}s`;
-          const imageFile = item['Image Filename'] || 'default.jpg';
-          const imagePath = `images/${imageFile}`;
-          const price = item['Price'] && !isNaN(parseFloat(item['Price']))
-            ? `AED ${parseFloat(item['Price']).toFixed(2)}`
-            : 'AED N/A';
-          const colors = item['Color'] ? item['Color'].split(',').map(c => c.trim()) : [];
-          const colorDisplay = colors.length > 0
-            ? colors.length >= 2
-              ? (() => {
-                  const tempDiv = document.createElement('div');
-                  tempDiv.style.display = 'none';
-                  document.body.appendChild(tempDiv);
-                  const colorAngles = colors.map((color, index) => {
+      const fragment = document.createDocumentFragment();
+      const batchSize = 10;
+      let index = 0;
+
+      function renderBatch() {
+        const start = index;
+        const end = Math.min(start + batchSize, items.length);
+        for (let i = start; i < end; i++) {
+          try {
+            const item = items[i];
+            const card = document.createElement('div');
+            card.className = 'item-card';
+            card.style.animation = `fadeInUp 0.3s ease forwards ${i * 0.05}s`;
+            const imageFile = item['Image Filename'] || 'default.jpg';
+            const imagePath = `images/${imageFile}`;
+            const price = item['Price'] && !isNaN(parseFloat(item['Price']))
+              ? `AED ${parseFloat(item['Price']).toFixed(2)}`
+              : 'AED N/A';
+            const colors = item['Color'] ? item['Color'].split(',').map(c => c.trim()) : [];
+            const colorDisplay = colors.length > 0
+              ? colors.length >= 2
+                ? (() => {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.style.display = 'none';
+                    document.body.appendChild(tempDiv);
+                    const colorAngles = colors.map((color, index) => {
+                      const normalizedColor = color.toLowerCase().replace(/\s+/g, '-');
+                      tempDiv.style.backgroundColor = normalizedColor;
+                      const computedColor = window.getComputedStyle(tempDiv).backgroundColor;
+                      const isValidColor = computedColor && computedColor !== 'rgba(0, 0, 0, 0)' && computedColor !== 'transparent';
+                      const displayColor = isValidColor ? normalizedColor : '#808080';
+                      const angleStart = (index * 360) / colors.length;
+                      const angleEnd = ((index + 1) * 360) / colors.length;
+                      return `${displayColor} ${angleStart}deg ${angleEnd}deg`;
+                    });
+                    document.body.removeChild(tempDiv);
+                    const gradient = `conic-gradient(${colorAngles.join(', ')})`;
+                    return `<span style="display: inline-block; width: 36px; height: 36px; border-radius: 50%; background: ${gradient}; margin: 0 4px; border: 1px solid #ccc;" title="${colors.join(', ')}"></span>`;
+                  })()
+                : (() => {
+                    const color = colors[0];
                     const normalizedColor = color.toLowerCase().replace(/\s+/g, '-');
+                    const tempDiv = document.createElement('div');
+                    tempDiv.style.display = 'none';
                     tempDiv.style.backgroundColor = normalizedColor;
+                    document.body.appendChild(tempDiv);
                     const computedColor = window.getComputedStyle(tempDiv).backgroundColor;
+                    document.body.removeChild(tempDiv);
                     const isValidColor = computedColor && computedColor !== 'rgba(0, 0, 0, 0)' && computedColor !== 'transparent';
                     const displayColor = isValidColor ? normalizedColor : '#808080';
-                    const angleStart = (index * 360) / colors.length;
-                    const angleEnd = ((index + 1) * 360) / colors.length;
-                    return `${displayColor} ${angleStart}deg ${angleEnd}deg`;
-                  });
-                  document.body.removeChild(tempDiv);
-                  const gradient = `conic-gradient(${colorAngles.join(', ')})`;
-                  return `<span style="display: inline-block; width: 36px; height: 36px; border-radius: 50%; background: ${gradient}; margin: 0 4px; border: 1px solid #ccc;" title="${colors.join(', ')}"></span>`;
-                })()
-              : (() => {
-                  const color = colors[0];
-                  const normalizedColor = color.toLowerCase().replace(/\s+/g, '-');
-                  const tempDiv = document.createElement('div');
-                  tempDiv.style.display = 'none';
-                  tempDiv.style.backgroundColor = normalizedColor;
-                  document.body.appendChild(tempDiv);
-                  const computedColor = window.getComputedStyle(tempDiv).backgroundColor;
-                  document.body.removeChild(tempDiv);
-                  const isValidColor = computedColor && computedColor !== 'rgba(0, 0, 0, 0)' && computedColor !== 'transparent';
-                  const displayColor = isValidColor ? normalizedColor : '#808080';
-                  return `<span style="display: inline-block; width: 36px; height: 36px; border-radius: 50%; background-color: ${displayColor}; margin: 0 4px; border: 1px solid #ccc;" title="${color}"></span>`;
-                })()
-            : 'N/A';
-          const flavor = item['Flavor'] || 'N/A';
-          const colorText = colors.length > 0 ? colors.join(', ') : 'N/A';
-          const uom = item['UOM'] || 'N/A';
-          const weight = item['Weight Per Piece(In Grams)'] && !isNaN(parseFloat(item['Weight Per Piece(In Grams)']))
-            ? `${parseFloat(item['Weight Per Piece(In Grams)']).toFixed(2)} g`
-            : 'N/A';
-          card.innerHTML = `
-            <img src="${imagePath}" loading="lazy" alt="${item['Item Description'] || 'Item'}" onclick="openModal('${imagePath}')" oncontextmenu="return false" />
-            <h3>${highlightText(item['Item Description'] || 'Unknown Item', keywords)}</h3>
-            <p><strong>Code:</strong> ${highlightText(item['Item Code'] || 'N/A', keywords)}</p>
-            <p><strong>Barcode:</strong> ${highlightText(item['Barcode'] || 'N/A', keywords)}</p>
-            <p class="category"><strong>Category:</strong> ${highlightText(item['Category'] || 'Uncategorized', keywords)}</p>
-            <p><strong>UOM:</strong> ${highlightText(uom, keywords)}</p>
-            <p><strong>Price:</strong> ${highlightText(price, keywords)}</p>
-            <p><strong>Color:</strong> ${colorDisplay} ${highlightText(colorText, keywords)}</p>
-            <p><strong>Flavor:</strong> ${highlightText(flavor, keywords)}</p>
-            <p><strong>Weight Per Piece:</strong> ${highlightText(weight, keywords)}</p>
-          `;
-          container.appendChild(card);
-        } catch (error) {
-          console.error(`Error rendering item at index ${index}:`, item, error);
+                    return `<span style="display: inline-block; width: 36px; height: 36px; border-radius: 50%; background-color: ${displayColor}; margin: 0 4px; border: 1px solid #ccc;" title="${color}"></span>`;
+                  })()
+              : 'N/A';
+            const flavor = item['Flavor'] || 'N/A';
+            const colorText = colors.length > 0 ? colors.join(', ') : 'N/A';
+            const uom = item['UOM'] || 'N/A';
+            const weight = item['Weight Per Piece(In Grams)'] && !isNaN(parseFloat(item['Weight Per Piece(In Grams)']))
+              ? `${parseFloat(item['Weight Per Piece(In Grams)']).toFixed(2)} g`
+              : 'N/A';
+            card.innerHTML = `
+              <img src="${imagePath}" loading="lazy" alt="${item['Item Description'] || 'Item'}" onclick="openModal('${imagePath}')" oncontextmenu="return false" />
+              <h3>${highlightText(item['Item Description'] || 'Unknown Item', keywords)}</h3>
+              <p><strong>Code:</strong> ${highlightText(item['Item Code'] || 'N/A', keywords)}</p>
+              <p><strong>Barcode:</strong> ${highlightText(item['Barcode'] || 'N/A', keywords)}</p>
+              <p class="category"><strong>Category:</strong> ${highlightText(item['Category'] || 'Uncategorized', keywords)}</p>
+              <p><strong>UOM:</strong> ${highlightText(uom, keywords)}</p>
+              <p><strong>Price:</strong> ${highlightText(price, keywords)}</p>
+              <p><strong>Color:</strong> ${colorDisplay} ${highlightText(colorText, keywords)}</p>
+              <p><strong>Flavor:</strong> ${highlightText(flavor, keywords)}</p>
+              <p><strong>Weight Per Piece:</strong> ${highlightText(weight, keywords)}</p>
+            `;
+            fragment.appendChild(card);
+          } catch (error) {
+            console.error(`Error rendering item at index ${i}:`, items[i], error);
+          }
         }
-      });
-      if (items.length === 0) {
-        container.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #ffffff;">No items match the current filters.</p>';
+        index = end;
+        if (index < items.length) {
+          requestAnimationFrame(renderBatch);
+        } else {
+          container.appendChild(fragment);
+          console.timeEnd('Render Items');
+          if (items.length === 0) {
+            container.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #000000;">No items match the current filters.</p>';
+          }
+        }
+      }
+
+      if (items.length > 0) {
+        requestAnimationFrame(renderBatch);
+      } else {
+        container.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #000000;">No items match the current filters.</p>';
+        console.timeEnd('Render Items');
       }
     }
 
     function filterItems() {
+      console.time('Filter Items');
       const searchTerm = document.getElementById('search-bar').value.toLowerCase();
       const selectedCategory = document.getElementById('category-filter').value;
       const keywords = searchTerm.trim().split(/\s+/).filter(Boolean);
@@ -552,11 +621,14 @@
               Object.values(item).some(value => (value || '').toString().toLowerCase().includes(keyword))
             )
           : true;
-        const matchesCategory = selectedCategory ? item.Category === selectedCategory : true;
+        const matchesCategory = searchTerm ? true : selectedCategory ? item.Category === selectedCategory : true;
         return matchesSearch && matchesCategory;
       });
       console.log('Filtered Items:', filtered);
-      setTimeout(() => displayItems(filtered, keywords), 300);
+      setTimeout(() => {
+        displayItems(filtered, keywords);
+        console.timeEnd('Filter Items');
+      }, 300);
     }
 
     const debouncedFilterItems = debounce(filterItems, 500);
