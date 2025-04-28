@@ -259,6 +259,36 @@
     .qa-hidden {
       display: none;
     }
+    #pagination {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .page-button {
+      padding: 8px 12px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #ffffff;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .page-button:hover {
+      background: #e2e2e2;
+      animation: pulse 0.5s ease;
+    }
+    .page-button.active-page {
+      background: #4682b4;
+      color: #ffffff;
+      border-color: #2b6cb0;
+    }
+    .page-button:disabled {
+      background: #f0f0f0;
+      cursor: not-allowed;
+      border-color: #ddd;
+    }
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -292,6 +322,10 @@
         padding: 20px;
         margin: 10px;
       }
+      .page-button {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
     }
   </style>
 </head>
@@ -306,6 +340,7 @@
     <button onclick="clearCacheAndRefresh()">Refresh</button>
   </div>
   <div id="items-container"></div>
+  <div id="pagination"></div>
   <div id="error-message" class="error-message"></div>
   <div id="imageModal" class="modal" onclick="closeModal()">
     <span class="close" onclick="closeModal()">×</span>
@@ -373,6 +408,8 @@
   </div>
   <script>
     let allItems = [];
+    let currentPage = 1;
+    const itemsPerPage = 25;
     let zoomLevel = 1;
     let zoomClickCount = 0;
     let modalOpen = false;
@@ -608,6 +645,89 @@
       }
     }
 
+    function renderPagination(totalItems) {
+      const pagination = document.getElementById('pagination');
+      pagination.innerHTML = '';
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      if (totalPages <= 1) return;
+
+      const prevButton = document.createElement('button');
+      prevButton.className = 'page-button';
+      prevButton.textContent = 'Previous';
+      prevButton.disabled = currentPage === 1;
+      prevButton.onclick = () => {
+        if (currentPage > 1) {
+          currentPage--;
+          filterItems();
+        }
+      };
+      pagination.appendChild(prevButton);
+
+      const maxVisiblePages = 5;
+      let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+      let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+      if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+      }
+
+      if (startPage > 1) {
+        const firstPage = document.createElement('button');
+        firstPage.className = 'page-button';
+        firstPage.textContent = '1';
+        firstPage.onclick = () => {
+          currentPage = 1;
+          filterItems();
+        };
+        pagination.appendChild(firstPage);
+        if (startPage > 2) {
+          const ellipsis = document.createElement('span');
+          ellipsis.textContent = '...';
+          ellipsis.style.padding = '8px';
+          pagination.appendChild(ellipsis);
+        }
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        const pageButton = document.createElement('button');
+        pageButton.className = `page-button ${i === currentPage ? 'active-page' : ''}`;
+        pageButton.textContent = i;
+        pageButton.onclick = () => {
+          currentPage = i;
+          filterItems();
+        };
+        pagination.appendChild(pageButton);
+      }
+
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+          const ellipsis = document.createElement('span');
+          ellipsis.textContent = '...';
+          ellipsis.style.padding = '8px';
+          pagination.appendChild(ellipsis);
+        }
+        const lastPage = document.createElement('button');
+        lastPage.className = 'page-button';
+        lastPage.textContent = totalPages;
+        lastPage.onclick = () => {
+          currentPage = totalPages;
+          filterItems();
+        };
+        pagination.appendChild(lastPage);
+      }
+
+      const nextButton = document.createElement('button');
+      nextButton.className = 'page-button';
+      nextButton.textContent = 'Next';
+      nextButton.disabled = currentPage === totalPages;
+      nextButton.onclick = () => {
+        if (currentPage < totalPages) {
+          currentPage++;
+          filterItems();
+        }
+      };
+      pagination.appendChild(nextButton);
+    }
+
     function filterItems() {
       console.time('Filter Items');
       const searchTerm = document.getElementById('search-bar').value.toLowerCase();
@@ -625,14 +745,21 @@
         return matchesSearch && matchesCategory;
       });
       console.log('Filtered Items:', filtered);
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedItems = filtered.slice(startIndex, endIndex);
       setTimeout(() => {
-        displayItems(filtered, keywords);
+        displayItems(paginatedItems, keywords);
+        renderPagination(filtered.length);
         console.timeEnd('Filter Items');
       }, 300);
     }
 
     const debouncedFilterItems = debounce(filterItems, 500);
-    document.getElementById('search-bar').addEventListener('input', debouncedFilterItems);
+    document.getElementById('search-bar').addEventListener('input', () => {
+      currentPage = 1;
+      debouncedFilterItems();
+    });
 
     function openModal(imageSrc) {
       zoomLevel = 1;
