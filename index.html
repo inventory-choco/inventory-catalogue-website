@@ -12,7 +12,7 @@
       background: #f7f7f7;
       margin: 0;
       padding: 20px;
-      padding-top: 80px; /* Adjusted to account for fixed controls height */
+      padding-top: 80px;
       user-select: none;
     }
     h1 {
@@ -77,6 +77,8 @@
       text-align: center;
       transition: transform 0.3s ease-in-out, background 0.3s ease-in-out;
       opacity: 0;
+      max-width: 300px; /* Cap card width */
+      margin: 0 auto; /* Center single card */
     }
     .item-card:hover {
       transform: translateY(-8px) scale(1.02);
@@ -602,6 +604,7 @@
     }
 
     function filterItems() {
+      currentPage = 1; // Reset to page 1 on new search or filter
       const searchTerm = document.getElementById('search-bar').value.toLowerCase();
       const selectedCategory = document.getElementById('category-filter').value;
       const keywords = searchTerm.trim().split(/\s+/).filter(Boolean);
