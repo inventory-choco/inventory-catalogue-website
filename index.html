@@ -421,7 +421,7 @@
     let imageY = 0;
     const cacheKey = 'inventory_data_cache';
     const cacheTTL = 24 * 60 * 60 * 1000; // 24 hours
-    const csvUrl = 'inventory_data.csv'; // Adjust if CSV is in a subdirectory
+    const csvUrl = 'https://raw.githubusercontent.com/inventory-choco/inventory-catalogue-website/main/inventory_data.csv';
 
     function clearCacheAndRefresh() {
       localStorage.clear();
@@ -487,7 +487,7 @@
           console.log('CSV Headers:', results.meta.fields);
           if (results.errors.length > 0 || !results.data) {
             console.error('CSV Parsing Errors:', results.errors);
-            document.getElementById('error-message').textContent = 'Error parsing inventory_data.csv. Please check the file format or console for details.';
+            document.getElementById('error-message').textContent = `Error parsing inventory_data.csv from ${csvUrl}. Please check the file format or console for details.`;
             document.getElementById('error-message').style.display = 'block';
             console.timeEnd('Parse CSV');
             return;
@@ -500,7 +500,7 @@
           });
           console.log('Filtered Items:', allItems);
           if (allItems.length === 0) {
-            document.getElementById('error-message').textContent = 'No valid items found in inventory_data.csv. Ensure it has data rows.';
+            document.getElementById('error-message').textContent = `No valid items found in inventory_data.csv at ${csvUrl}. Ensure it has data rows.`;
             document.getElementById('error-message').style.display = 'block';
             console.timeEnd('Parse CSV');
             return;
@@ -515,7 +515,7 @@
         error: function(error) {
           console.error('PapaParse Error:', error);
           console.error('Failed to load:', csvUrl);
-          document.getElementById('error-message').textContent = 'Failed to load inventory_data.csv. Ensure the file exists at the correct path (inventory_data.csv) and is accessible.';
+          document.getElementById('error-message').textContent = `Failed to load inventory_data.csv from ${csvUrl}. Ensure the file exists and is accessible.`;
           document.getElementById('error-message').style.display = 'block';
           console.timeEnd('Parse CSV');
         }
