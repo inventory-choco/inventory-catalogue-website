@@ -12,6 +12,7 @@
       background: #f7f7f7;
       margin: 0;
       padding: 20px;
+      padding-top: 80px; /* Adjusted to account for fixed controls height */
       user-select: none;
     }
     h1 {
@@ -19,12 +20,20 @@
       animation: fadeIn 1s ease-in-out;
     }
     #controls {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
       display: flex;
       justify-content: center;
       flex-wrap: wrap;
       gap: 15px;
       margin-bottom: 20px;
+      padding: 10px;
+      background: #f7f7f7;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       animation: slideIn 1s ease-out;
+      z-index: 100;
     }
     input, select, button {
       padding: 10px;
