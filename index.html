@@ -59,20 +59,19 @@
       opacity: 0.3;
     }
     .item-card {
-      background: #87ceeb;
-      color: #000000;
+      background: #b0e0e6;
+      color: Black;
       border-radius: 10px;
       padding: 15px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
       border: 1px solid #2b6cb0;
       text-align: center;
-      transition: transform 0.3s ease-in-out, background 0.3s ease-in-out, color 0.3s ease-in-out;
+      transition: transform 0.3s ease-in-out, background 0.3s ease-in-out;
       opacity: 0;
     }
     .item-card:hover {
       transform: translateY(-8px) scale(1.02);
-      background: #4682b4;
-      color: #ffffff;
+      background: #2b6cb0;
     }
     .item-card img {
       width: 100%;
@@ -258,36 +257,6 @@
     .qa-hidden {
       display: none;
     }
-    #pagination {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 20px;
-      flex-wrap: wrap;
-    }
-    .page-button {
-      padding: 8px 12px;
-      font-size: 14px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      background: #ffffff;
-      cursor: pointer;
-      transition: background 0.3s, transform 0.2s;
-    }
-    .page-button:hover {
-      background: #e2e2e2;
-      animation: pulse 0.5s ease;
-    }
-    .page-button.active-page {
-      background: #4682b4;
-      color: #ffffff;
-      border-color: #2b6cb0;
-    }
-    .page-button:disabled {
-      background: #f0f0f0;
-      cursor: not-allowed;
-      border-color: #ddd;
-    }
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -321,10 +290,6 @@
         padding: 20px;
         margin: 10px;
       }
-      .page-button {
-        padding: 6px 10px;
-        font-size: 12px;
-      }
     }
   </style>
 </head>
@@ -332,14 +297,13 @@
   <h1>Inventory Catalogue</h1>
   <button id="qa-button">Show QA</button>
   <div id="controls">
-    <input type="text" id="search-bar" placeholder="Search items..."/>
+    <input type="text" id="search-bar" placeholder="Search items..." oninput="filterItems()"/>
     <select id="category-filter" onchange="filterItems()">
       <option value="">All Categories</option>
     </select>
     <button onclick="clearCacheAndRefresh()">Refresh</button>
   </div>
   <div id="items-container"></div>
-  <div id="pagination"></div>
   <div id="error-message" class="error-message"></div>
   <div id="imageModal" class="modal" onclick="closeModal()">
     <span class="close" onclick="closeModal()">×</span>
@@ -407,8 +371,6 @@
   </div>
   <script>
     let allItems = [];
-    let currentPage = 1;
-    const itemsPerPage = 25;
     let zoomLevel = 1;
     let zoomClickCount = 0;
     let modalOpen = false;
@@ -419,10 +381,6 @@
     let dragStartY = 0;
     let imageX = 0;
     let imageY = 0;
-    const cacheKey = 'inventory_data_cache';
-    const cacheTTL = 24 * 60 * 60 * 1000; // 24 hours
-    const csvUrl = 'https://raw.githubusercontent.com/inventory-choco/inventory-catalogue-website/main/inventory_data.csv';
-
     function clearCacheAndRefresh() {
       localStorage.clear();
       sessionStorage.clear();
@@ -432,96 +390,38 @@
         location.reload();
       });
     }
-
-    function debounce(func, wait) {
-      let timeout;
-      return function executedFunction(...args) {
-        const later = () => {
-          clearTimeout(timeout);
-          func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-      };
-    }
-
-    function loadCachedData() {
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < cacheTTL) {
-          console.log('Using cached data');
-          return data;
-        }
-      }
-      return null;
-    }
-
-    function saveCachedData(data) {
-      localStorage.setItem(cacheKey, JSON.stringify({
-        data,
-        timestamp: Date.now()
-      }));
-    }
-
-    const cachedData = loadCachedData();
-    if (cachedData) {
-      console.time('Load Cached Data');
-      allItems = cachedData;
-      console.log('Cached Items:', allItems);
-      populateCategories();
-      const categoryFilter = document.getElementById('category-filter');
-      categoryFilter.value = allItems.some(item => item.Category === 'ITALIAN - WRAPPED') ? 'ITALIAN - WRAPPED' : '';
-      filterItems();
-      console.timeEnd('Load Cached Data');
-    } else {
-      console.time('Parse CSV');
-      console.log('Attempting to load CSV from:', csvUrl);
-      Papa.parse(csvUrl, {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        worker: true,
-        complete: function(results) {
-          console.log('PapaParse Raw Data:', results.data);
-          console.log('CSV Headers:', results.meta.fields);
-          if (results.errors.length > 0 || !results.data) {
-            console.error('CSV Parsing Errors:', results.errors);
-            document.getElementById('error-message').textContent = `Error parsing inventory_data.csv from ${csvUrl}. Please check the file format or console for details.`;
-            document.getElementById('error-message').style.display = 'block';
-            console.timeEnd('Parse CSV');
-            return;
-          }
-          allItems = results.data.filter(item => item && Object.keys(item).length > 0);
-          allItems.forEach((item, index) => {
-            if (!item['Item Code'] || !item['Item Description']) {
-              console.warn(`Row ${index + 2} is missing Item Code or Item Description:`, item);
-            }
-          });
-          console.log('Filtered Items:', allItems);
-          if (allItems.length === 0) {
-            document.getElementById('error-message').textContent = `No valid items found in inventory_data.csv at ${csvUrl}. Ensure it has data rows.`;
-            document.getElementById('error-message').style.display = 'block';
-            console.timeEnd('Parse CSV');
-            return;
-          }
-          saveCachedData(allItems);
-          populateCategories();
-          const categoryFilter = document.getElementById('category-filter');
-          categoryFilter.value = allItems.some(item => item.Category === 'ITALIAN - WRAPPED') ? 'ITALIAN - WRAPPED' : '';
-          filterItems();
-          console.timeEnd('Parse CSV');
-        },
-        error: function(error) {
-          console.error('PapaParse Error:', error);
-          console.error('Failed to load:', csvUrl);
-          document.getElementById('error-message').textContent = `Failed to load inventory_data.csv from ${csvUrl}. Ensure the file exists and is accessible.`;
+    Papa.parse('inventory_data.csv', {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        console.log('PapaParse Results:', results);
+        if (results.errors.length > 0 || !results.data) {
+          console.error('CSV Parsing Errors:', results.errors);
+          document.getElementById('error-message').textContent = 'Error parsing CSV file. Please check the file format or console for details.';
           document.getElementById('error-message').style.display = 'block';
-          console.timeEnd('Parse CSV');
+          return;
         }
-      });
-    }
-
+        allItems = results.data.filter(item => item['Item Code'] && item['Item Description']);
+        console.log('Filtered Items:', allItems);
+        if (allItems.length === 0) {
+          document.getElementById('error-message').textContent = 'No valid items found in CSV. Ensure it has Item Code and Item Description.';
+          document.getElementById('error-message').style.display = 'block';
+          return;
+        }
+        populateCategories();
+        const categoryFilter = document.getElementById('category-filter');
+        categoryFilter.value = allItems.some(item => item.Category === 'ITALIAN - WRAPPED')
+          ? 'ITALIAN - WRAPPED'
+          : '';
+        filterItems();
+      },
+      error: function(error) {
+        console.error('PapaParse Error:', error);
+        document.getElementById('error-message').textContent = 'Failed to load inventory_data.csv. Check file path or network connection.';
+        document.getElementById('error-message').style.display = 'block';
+      }
+    });
     function populateCategories() {
       const categoryFilter = document.getElementById('category-filter');
       const categories = [...new Set(allItems.map(item => item.Category).filter(Boolean))].sort();
@@ -533,7 +433,6 @@
         categoryFilter.appendChild(option);
       });
     }
-
     function highlightText(text, keywords) {
       if (!keywords.length || !text) return text;
       let highlighted = text;
@@ -544,194 +443,74 @@
       });
       return highlighted;
     }
-
     function displayItems(items, keywords = []) {
-      console.time('Render Items');
       console.log('Displaying Items:', items);
       const container = document.getElementById('items-container');
       container.innerHTML = '';
       container.classList.remove('filtering');
-      const fragment = document.createDocumentFragment();
-      const batchSize = 10;
-      let index = 0;
-
-      function renderBatch() {
-        const start = index;
-        const end = Math.min(start + batchSize, items.length);
-        for (let i = start; i < end; i++) {
-          try {
-            const item = items[i];
-            const card = document.createElement('div');
-            card.className = 'item-card';
-            card.style.animation = `fadeInUp 0.3s ease forwards ${i * 0.05}s`;
-            const imageFile = item['Image Filename'] || 'images/default.jpg';
-            const imagePath = imageFile && imageFile !== 'images/default.jpg' ? 'images/' + imageFile : imageFile;
-            const price = item['Price'] && !isNaN(parseFloat(item['Price']))
-              ? `AED ${parseFloat(item['Price']).toFixed(2)}`
-              : 'AED N/A';
-            const colors = item['Color'] ? item['Color'].split(',').map(c => c.trim()) : [];
-            const colorDisplay = colors.length > 0
-              ? colors.length >= 2
-                ? (() => {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.style.display = 'none';
-                    document.body.appendChild(tempDiv);
-                    const colorAngles = colors.map((color, index) => {
-                      const normalizedColor = color.toLowerCase().replace(/\s+/g, '-');
-                      tempDiv.style.backgroundColor = normalizedColor;
-                      const computedColor = window.getComputedStyle(tempDiv).backgroundColor;
-                      const isValidColor = computedColor && computedColor !== 'rgba(0, 0, 0, 0)' && computedColor !== 'transparent';
-                      const displayColor = isValidColor ? normalizedColor : '#808080';
-                      const angleStart = (index * 360) / colors.length;
-                      const angleEnd = ((index + 1) * 360) / colors.length;
-                      return `${displayColor} ${angleStart}deg ${angleEnd}deg`;
-                    });
-                    document.body.removeChild(tempDiv);
-                    const gradient = `conic-gradient(${colorAngles.join(', ')})`;
-                    return `<span style="display: inline-block; width: 36px; height: 36px; border-radius: 50%; background: ${gradient}; margin: 0 4px; border: 1px solid #ccc;" title="${colors.join(', ')}"></span>`;
-                  })()
-                : (() => {
-                    const color = colors[0];
-                    const normalizedColor = color.toLowerCase().replace(/\s+/g, '-');
-                    const tempDiv = document.createElement('div');
-                    tempDiv.style.display = 'none';
-                    tempDiv.style.backgroundColor = normalizedColor;
-                    document.body.appendChild(tempDiv);
-                    const computedColor = window.getComputedStyle(tempDiv).backgroundColor;
-                    document.body.removeChild(tempDiv);
-                    const isValidColor = computedColor && computedColor !== 'rgba(0, 0, 0, 0)' && computedColor !== 'transparent';
-                    const displayColor = isValidColor ? normalizedColor : '#808080';
-                    return `<span style="display: inline-block; width: 36px; height: 36px; border-radius: 50%; background-color: ${displayColor}; margin: 0 4px; border: 1px solid #ccc;" title="${color}"></span>`;
-                  })()
-              : 'N/A';
-            const flavor = item['Flavor'] || 'N/A';
-            const colorText = colors.length > 0 ? colors.join(', ') : 'N/A';
-            const uom = item['UOM'] || 'N/A';
-            const weight = item['Weight Per Piece(In Grams)'] && !isNaN(parseFloat(item['Weight Per Piece(In Grams)']))
-              ? `${parseFloat(item['Weight Per Piece(In Grams)']).toFixed(2)} g`
-              : 'N/A';
-            card.innerHTML = `
-              <img src="${imagePath}" loading="lazy" alt="${item['Item Description'] || 'Item'}" onerror="console.warn('Failed to load image: ${imagePath} for item ${item['Item Code'] || 'unknown'}'); this.src='images/default.jpg'" onclick="openModal('${imagePath}')" oncontextmenu="return false" />
-              <h3>${highlightText(item['Item Description'] || 'Unknown Item', keywords)}</h3>
-              <p><strong>Code:</strong> ${highlightText(item['Item Code'] || 'N/A', keywords)}</p>
-              <p><strong>Barcode:</strong> ${highlightText(item['Barcode'] || 'N/A', keywords)}</p>
-              <p class="category"><strong>Category:</strong> ${highlightText(item['Category'] || 'Uncategorized', keywords)}</p>
-              <p><strong>UOM:</strong> ${highlightText(uom, keywords)}</p>
-              <p><strong>Price:</strong> ${highlightText(price, keywords)}</p>
-              <p><strong>Color:</strong> ${colorDisplay} ${highlightText(colorText, keywords)}</p>
-              <p><strong>Flavor:</strong> ${highlightText(flavor, keywords)}</p>
-              <p><strong>Weight Per Piece:</strong> ${highlightText(weight, keywords)}</p>
-            `;
-            fragment.appendChild(card);
-          } catch (error) {
-            console.error(`Error rendering item at index ${i}:`, items[i], error);
-          }
-        }
-        index = end;
-        if (index < items.length) {
-          requestAnimationFrame(renderBatch);
-        } else {
-          container.appendChild(fragment);
-          console.timeEnd('Render Items');
-          if (items.length === 0) {
-            container.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #000000;">No items match the current filters.</p>';
-          }
-        }
-      }
-
-      if (items.length > 0) {
-        requestAnimationFrame(renderBatch);
-      } else {
+      items.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = 'item-card';
+        card.style.animation = `fadeInUp 0.5s ease forwards ${index * 0.1}s`;
+        const imageFile = item['Image Filename'] || 'default.jpg';
+        const imagePath = `images/${imageFile}`;
+        const price = item['Price'] && !isNaN(parseFloat(item['Price']))
+          ? `AED ${parseFloat(item['Price']).toFixed(2)}`
+          : 'AED N/A';
+        const colors = item['Color'] ? item['Color'].split(',').map(c => c.trim()) : [];
+        const colorDisplay = colors.length > 0
+          ? colors.length >= 2
+            ? (() => {
+                const tempDiv = document.createElement('div');
+                tempDiv.style.display = 'none';
+                document.body.appendChild(tempDiv);
+                const colorAngles = colors.map((color, index) => {
+                  const normalizedColor = color.toLowerCase().replace(/\s+/g, '-');
+                  tempDiv.style.backgroundColor = normalizedColor;
+                  const computedColor = window.getComputedStyle(tempDiv).backgroundColor;
+                  const isValidColor = computedColor && computedColor !== 'rgba(0, 0, 0, 0)' && computedColor !== 'transparent';
+                  const displayColor = isValidColor ? normalizedColor : '#808080';
+                  const angleStart = (index * 360) / colors.length;
+                  const angleEnd = ((index + 1) * 360) / colors.length;
+                  return `${displayColor} ${angleStart}deg ${angleEnd}deg`;
+                });
+                document.body.removeChild(tempDiv);
+                const gradient = `conic-gradient(${colorAngles.join(', ')})`;
+                return `<span style="display: inline-block; width: 36px; height: 36px; border-radius: 50%; background: ${gradient}; margin: 0 4px; border: 1px solid #ccc;" title="${colors.join(', ')}"></span>`;
+              })()
+            : (() => {
+                const color = colors[0];
+                const normalizedColor = color.toLowerCase().replace(/\s+/g, '-');
+                const tempDiv = document.createElement('div');
+                tempDiv.style.display = 'none';
+                tempDiv.style.backgroundColor = normalizedColor;
+                document.body.appendChild(tempDiv);
+                const computedColor = window.getComputedStyle(tempDiv).backgroundColor;
+                document.body.removeChild(tempDiv);
+                const isValidColor = computedColor && computedColor !== 'rgba(0, 0, 0, 0)' && computedColor !== 'transparent';
+                const displayColor = isValidColor ? normalizedColor : '#808080';
+                return `<span style="display: inline-block; width: 36px; height: 36px; border-radius: 50%; background-color: ${displayColor}; margin: 0 4px; border: 1px solid #ccc;" title="${color}"></span>`;
+              })()
+          : 'N/A';
+        const flavor = item['Flavor'] || 'N/A';
+        const colorText = colors.length > 0 ? colors.join(', ') : 'N/A';
+        card.innerHTML = `
+          <img src="${imagePath}" loading="lazy" alt="${item['Item Description'] || 'Item'}" onerror="this.src='images/default.jpg'" onclick="openModal('${imagePath}')" oncontextmenu="return false" />
+          <h3>${highlightText(item['Item Description'] || 'Unknown Item', keywords)}</h3>
+          <p><strong>Code:</strong> ${highlightText(item['Item Code'] || 'N/A', keywords)}</p>
+          <p><strong>Barcode:</strong> ${highlightText(item['Barcode'] || 'N/A', keywords)}</p>
+          <p class="category"><strong>Category:</strong> ${highlightText(item['Category'] || 'Uncategorized', keywords)}</p>
+          <p><strong>Price:</strong> ${highlightText(price, keywords)}</p>
+          <p><strong>Color:</strong> ${colorDisplay} ${highlightText(colorText, keywords)}</p>
+          <p><strong>Flavor:</strong> ${highlightText(flavor, keywords)}</p>
+        `;
+        container.appendChild(card);
+      });
+      if (items.length === 0) {
         container.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #000000;">No items match the current filters.</p>';
-        console.timeEnd('Render Items');
       }
     }
-
-    function renderPagination(totalItems) {
-      const pagination = document.getElementById('pagination');
-      pagination.innerHTML = '';
-      const totalPages = Math.ceil(totalItems / itemsPerPage);
-      if (totalPages <= 1) return;
-
-      const prevButton = document.createElement('button');
-      prevButton.className = 'page-button';
-      prevButton.textContent = 'Previous';
-      prevButton.disabled = currentPage === 1;
-      prevButton.onclick = () => {
-        if (currentPage > 1) {
-          currentPage--;
-          filterItems();
-        }
-      };
-      pagination.appendChild(prevButton);
-
-      const maxVisiblePages = 5;
-      let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-      let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-      if (endPage - startPage + 1 < maxVisiblePages) {
-        startPage = Math.max(1, endPage - maxVisiblePages + 1);
-      }
-
-      if (startPage > 1) {
-        const firstPage = document.createElement('button');
-        firstPage.className = 'page-button';
-        firstPage.textContent = '1';
-        firstPage.onclick = () => {
-          currentPage = 1;
-          filterItems();
-        };
-        pagination.appendChild(firstPage);
-        if (startPage > 2) {
-          const ellipsis = document.createElement('span');
-          ellipsis.textContent = '...';
-          ellipsis.style.padding = '8px';
-          pagination.appendChild(ellipsis);
-        }
-      }
-
-      for (let i = startPage; i <= endPage; i++) {
-        const pageButton = document.createElement('button');
-        pageButton.className = `page-button ${i === currentPage ? 'active-page' : ''}`;
-        pageButton.textContent = i;
-        pageButton.onclick = () => {
-          currentPage = i;
-          filterItems();
-        };
-        pagination.appendChild(pageButton);
-      }
-
-      if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-          const ellipsis = document.createElement('span');
-          ellipsis.textContent = '...';
-          ellipsis.style.padding = '8px';
-          pagination.appendChild(ellipsis);
-        }
-        const lastPage = document.createElement('button');
-        lastPage.className = 'page-button';
-        lastPage.textContent = totalPages;
-        lastPage.onclick = () => {
-          currentPage = totalPages;
-          filterItems();
-        };
-        pagination.appendChild(lastPage);
-      }
-
-      const nextButton = document.createElement('button');
-      nextButton.className = 'page-button';
-      nextButton.textContent = 'Next';
-      nextButton.disabled = currentPage === totalPages;
-      nextButton.onclick = () => {
-        if (currentPage < totalPages) {
-          currentPage++;
-          filterItems();
-        }
-      };
-      pagination.appendChild(nextButton);
-    }
-
     function filterItems() {
-      console.time('Filter Items');
       const searchTerm = document.getElementById('search-bar').value.toLowerCase();
       const selectedCategory = document.getElementById('category-filter').value;
       const keywords = searchTerm.trim().split(/\s+/).filter(Boolean);
@@ -739,30 +518,16 @@
       container.classList.add('filtering');
       const filtered = allItems.filter(item => {
         const matchesSearch = keywords.length > 0
-          ? keywords.every(keyword =>
-              Object.values(item).some(value => (value || '').toString().toLowerCase().includes(keyword))
+          ? keywords.every(keyword => 
+              Object.values(item).some(value => (value || '').toLowerCase().includes(keyword))
             )
           : true;
         const matchesCategory = searchTerm ? true : selectedCategory ? item.Category === selectedCategory : true;
         return matchesSearch && matchesCategory;
       });
       console.log('Filtered Items:', filtered);
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
-      const paginatedItems = filtered.slice(startIndex, endIndex);
-      setTimeout(() => {
-        displayItems(paginatedItems, keywords);
-        renderPagination(filtered.length);
-        console.timeEnd('Filter Items');
-      }, 300);
+      setTimeout(() => displayItems(filtered, keywords), 300);
     }
-
-    const debouncedFilterItems = debounce(filterItems, 500);
-    document.getElementById('search-bar').addEventListener('input', () => {
-      currentPage = 1;
-      debouncedFilterItems();
-    });
-
     function openModal(imageSrc) {
       zoomLevel = 1;
       zoomClickCount = 0;
@@ -778,7 +543,6 @@
       modal.style.display = 'block';
       modalImg.src = imageSrc;
     }
-
     function closeModal() {
       zoomLevel = 1;
       zoomClickCount = 0;
@@ -790,21 +554,18 @@
       modalImg.style.left = '0px';
       modalImg.style.top = '0px';
     }
-
     function zoomIn(event) {
       event.stopPropagation();
       zoomClickCount++;
       zoomLevel += 0.2 + 0.05 * zoomClickCount;
       updateImageTransform();
     }
-
     function zoomOut(event) {
       event.stopPropagation();
       zoomClickCount++;
       zoomLevel = Math.max(0.1, zoomLevel - (0.2 + 0.05 * zoomClickCount));
       updateImageTransform();
     }
-
     function resetZoom(event) {
       event.stopPropagation();
       zoomLevel = 1;
@@ -816,14 +577,12 @@
       modalImg.style.left = '0px';
       modalImg.style.top = '0px';
     }
-
     function updateImageTransform() {
       const modalImg = document.getElementById('modalImage');
       modalImg.style.transform = `scale(${zoomLevel})`;
       modalImg.style.left = `${imageX}px`;
       modalImg.style.top = `${imageY}px`;
     }
-
     function openQAModal() {
       document.getElementById('qaModal').style.display = 'block';
       document.getElementById('qa-button').style.display = 'none';
@@ -837,12 +596,10 @@
         section.style.animation = `fadeInUp 0.5s ease forwards`;
       });
     }
-
     function closeQAModal() {
       document.getElementById('qaModal').style.display = 'none';
       document.getElementById('qa-button').style.display = 'block';
     }
-
     window.addEventListener('popstate', function (event) {
       if (modalOpen && event.state && event.state.modal) {
         closeModal();
@@ -851,9 +608,7 @@
         closeQAModal();
       }
     });
-
     document.getElementById('qa-button').addEventListener('click', openQAModal);
-
     const qaSearch = document.getElementById('qa-search');
     const qaSections = document.querySelectorAll('.qa-section');
     qaSearch.addEventListener('input', function() {
@@ -869,24 +624,16 @@
         }
       });
     });
-
     const modalWrapper = document.querySelector('.modal-content-wrapper');
     modalWrapper.addEventListener('touchstart', e => {
       startY = e.changedTouches[0].screenY;
     });
-
-    const modalWrapper = document.querySelector('.modal-content-wrapper');
-    modalWrapper.addEventListener('touchstart', e => {
-      startY = e.changedTouches[0].screenY;
-    });
-
     modalWrapper.addEventListener('touchend', e => {
       endY = e.changedTouches[0].screenY;
       if (Math.abs(endY - startY) > 150 && !isDragging) {
         closeModal();
       }
     });
-
     const modalImg = document.getElementById('modalImage');
     modalImg.addEventListener('mousedown', startDragging);
     modalImg.addEventListener('touchstart', startDragging);
@@ -905,7 +652,6 @@
       e.preventDefault();
       return false;
     });
-
     function startDragging(e) {
       e.preventDefault();
       isDragging = true;
@@ -913,7 +659,6 @@
       dragStartY = (e.clientY || e.changedTouches[0].clientY) - imageY;
       modalImg.style.cursor = 'grabbing';
     }
-
     function dragImage(e) {
       if (!isDragging) return;
       e.preventDefault();
@@ -929,7 +674,6 @@
       modalImg.style.left = `${imageX}px`;
       modalImg.style.top = `${imageY}px`;
     }
-
     function stopDragging() {
       isDragging = false;
       modalImg.style.cursor = 'grab';
