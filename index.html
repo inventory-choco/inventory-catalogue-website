@@ -6,7 +6,6 @@
   <title>Inventory Catalogue</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-  <link rel="preload" href="images/default.jpg" as="image">
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -422,6 +421,7 @@
     let imageY = 0;
     const cacheKey = 'inventory_data_cache';
     const cacheTTL = 24 * 60 * 60 * 1000; // 24 hours
+    const csvUrl = 'inventory_data.csv'; // Adjust if CSV is in a subdirectory
 
     function clearCacheAndRefresh() {
       localStorage.clear();
@@ -476,7 +476,8 @@
       console.timeEnd('Load Cached Data');
     } else {
       console.time('Parse CSV');
-      Papa.parse('inventory_data.csv', {
+      console.log('Attempting to load CSV from:', csvUrl);
+      Papa.parse(csvUrl, {
         download: true,
         header: true,
         skipEmptyLines: true,
@@ -486,7 +487,7 @@
           console.log('CSV Headers:', results.meta.fields);
           if (results.errors.length > 0 || !results.data) {
             console.error('CSV Parsing Errors:', results.errors);
-            document.getElementById('error-message').textContent = 'Error parsing CSV file. Please check the file format or console for details.';
+            document.getElementById('error-message').textContent = 'Error parsing inventory_data.csv. Please check the file format or console for details.';
             document.getElementById('error-message').style.display = 'block';
             console.timeEnd('Parse CSV');
             return;
@@ -499,7 +500,7 @@
           });
           console.log('Filtered Items:', allItems);
           if (allItems.length === 0) {
-            document.getElementById('error-message').textContent = 'No valid items found in CSV. Ensure it has data rows.';
+            document.getElementById('error-message').textContent = 'No valid items found in inventory_data.csv. Ensure it has data rows.';
             document.getElementById('error-message').style.display = 'block';
             console.timeEnd('Parse CSV');
             return;
@@ -513,7 +514,8 @@
         },
         error: function(error) {
           console.error('PapaParse Error:', error);
-          document.getElementById('error-message').textContent = 'Failed to load inventory_data.csv. Check file path or network connection.';
+          console.error('Failed to load:', csvUrl);
+          document.getElementById('error-message').textContent = 'Failed to load inventory_data.csv. Ensure the file exists at the correct path (inventory_data.csv) and is accessible.';
           document.getElementById('error-message').style.display = 'block';
           console.timeEnd('Parse CSV');
         }
@@ -562,8 +564,8 @@
             const card = document.createElement('div');
             card.className = 'item-card';
             card.style.animation = `fadeInUp 0.3s ease forwards ${i * 0.05}s`;
-            const imageFile = item['Image Filename'] || 'default.jpg';
-            const imagePath = `images/${imageFile}`;
+            const imageFile = item['Image Filename'] || 'images/default.jpg';
+            const imagePath = imageFile;
             const price = item['Price'] && !isNaN(parseFloat(item['Price']))
               ? `AED ${parseFloat(item['Price']).toFixed(2)}`
               : 'AED N/A';
