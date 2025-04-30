@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inventory Catalogue</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
   <style>
     body {
@@ -79,6 +80,7 @@
       opacity: 0;
       max-width: 300px; /* Cap card width */
       margin: 0 auto; /* Center single card */
+      position: relative; /* For positioning screenshot button */
     }
     .item-card:hover {
       transform: translateY(-8px) scale(1.02);
@@ -292,6 +294,27 @@
       cursor: not-allowed;
       transform: none;
     }
+    .screenshot-button {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: #ffffffdd;
+      border: 1px solid #ccc;
+      padding: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.3s, transform 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      z-index: 10;
+    }
+    .screenshot-button:hover {
+      background: #e2e2e2;
+      transform: scale(1.05);
+    }
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -430,6 +453,18 @@
       });
     }
 
+    function captureCard(card, itemDescription) {
+      html2canvas(card, { scale: 2 }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `${itemDescription || 'item'}_screenshot.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }).catch(err => {
+        console.error('Error capturing card:', err);
+        alert('Failed to capture screenshot. Please try again.');
+      });
+    }
+
     Papa.parse('inventory_data.csv', {
       download: true,
       header: true,
@@ -547,6 +582,7 @@
           ? `${parseFloat(item['Weight Per Piece(In Grams)']).toFixed(2)}g`
           : 'N/A';
         card.innerHTML = `
+          <button class="screenshot-button" onclick="captureCard(this.parentElement, '${item['Item Description'].replace(/['"]/g, '')}')">📸</button>
           <img src="${imagePath}" loading="lazy" alt="${item['Item Description'] || 'Item'}" onerror="this.src='images/default.jpg'" onclick="openModal('${imagePath}')" oncontextmenu="return false" />
           <h3>${highlightText(item['Item Description'] || 'Unknown Item', keywords)}</h3>
           <p><strong>Item Code:</strong> ${highlightText(item['Item Code'] || 'N/A', keywords)}</p>
