@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Inventory Catalogue</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
   <style>
     body {
@@ -77,8 +78,9 @@
       text-align: center;
       transition: transform 0.3s ease-in-out, background 0.3s ease-in-out;
       opacity: 0;
-      max-width: 300px; /* Cap card width */
-      margin: 0 auto; /* Center single card */
+      max-width: 300px;
+      margin: 0 auto;
+      position: relative; /* For positioning screenshot button */
     }
     .item-card:hover {
       transform: translateY(-8px) scale(1.02);
@@ -100,6 +102,22 @@
     }
     .item-card p.category {
       color: red;
+    }
+    .screenshot-btn {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: #ffffff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      z-index: 10;
+      transition: background 0.3s;
+    }
+    .screenshot-btn:hover {
+      background: #e2e2e2;
     }
     .highlight {
       background-color: #fef08a;
@@ -486,6 +504,18 @@
       return highlighted;
     }
 
+    function takeScreenshot(cardElement) {
+      html2canvas(cardElement).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `item-card-${cardElement.querySelector('h3').textContent.replace(/\s+/g, '_')}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }).catch(error => {
+        console.error('Screenshot Error:', error);
+        alert('Failed to capture screenshot. Please try again.');
+      });
+    }
+
     function displayItems(items, keywords = []) {
       console.log('Displaying Items:', items);
       const container = document.getElementById('items-container');
@@ -547,6 +577,7 @@
           ? `${parseFloat(item['Weight Per Piece(In Grams)']).toFixed(2)}g`
           : 'N/A';
         card.innerHTML = `
+          <button class="screenshot-btn" onclick="takeScreenshot(this.parentElement)">📷 Screenshot</button>
           <img src="${imagePath}" loading="lazy" alt="${item['Item Description'] || 'Item'}" onerror="this.src='images/default.jpg'" onclick="openModal('${imagePath}')" oncontextmenu="return false" />
           <h3>${highlightText(item['Item Description'] || 'Unknown Item', keywords)}</h3>
           <p><strong>Item Code:</strong> ${highlightText(item['Item Code'] || 'N/A', keywords)}</p>
@@ -604,7 +635,7 @@
     }
 
     function filterItems() {
-      currentPage = 1; // Reset to page 1 on new search or filter
+      currentPage = 1;
       const searchTerm = document.getElementById('search-bar').value.toLowerCase();
       const selectedCategory = document.getElementById('category-filter').value;
       const keywords = searchTerm.trim().split(/\s+/).filter(Boolean);
