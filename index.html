@@ -40,7 +40,7 @@
       padding: 10px;
       font-size: 16px;
       border-radius: 6px;
-      border: 1px solid #ccc;
+      border: 1px solid # locatieccc;
       transition: transform 0.2s ease-in-out;
     }
     button {
@@ -442,6 +442,8 @@
     let imageY = 0;
     let currentPage = 1;
     const itemsPerPage = 25;
+    let lastSearchTerm = '';
+    let lastCategory = '';
 
     function clearCacheAndRefresh() {
       localStorage.clear();
@@ -454,14 +456,31 @@
     }
 
     function captureCard(card, itemDescription) {
-      html2canvas(card, { scale: 2 }).then(canvas => {
+      // Clone the card to a hidden container to ensure styles are computed
+      const clone = card.cloneNode(true);
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.top = '-9999px';
+      container.style.left = '-9999px';
+      container.appendChild(clone);
+      document.body.appendChild(container);
+
+      // Force style computation
+      clone.querySelectorAll('span[style*="background"]').forEach(span => {
+        const computedStyle = window.getComputedStyle(span);
+        span.style.background = computedStyle.background;
+      });
+
+      html2canvas(clone, { scale: 2 }).then(canvas => {
         const link = document.createElement('a');
         link.download = `${itemDescription || 'item'}_screenshot.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
+        document.body.removeChild(container);
       }).catch(err => {
         console.error('Error capturing card:', err);
         alert('Failed to capture screenshot. Please try again.');
+        document.body.removeChild(container);
       });
     }
 
@@ -617,7 +636,7 @@
       prevButton.onclick = () => {
         if (currentPage > 1) {
           currentPage--;
-          filterItems();
+          filterItems(true);
         }
       };
       pagination.appendChild(prevButton);
@@ -633,16 +652,23 @@
       nextButton.onclick = () => {
         if (currentPage < totalPages) {
           currentPage++;
-          filterItems();
+          filterItems(true);
         }
       };
       pagination.appendChild(nextButton);
     }
 
-    function filterItems() {
-      currentPage = 1; // Reset to page 1 on new search or filter
+    function filterItems(isPagination = false) {
       const searchTerm = document.getElementById('search-bar').value.toLowerCase();
       const selectedCategory = document.getElementById('category-filter').value;
+
+      // Only reset currentPage if search or filter changes
+      if (!isPagination || searchTerm !== lastSearchTerm || selectedCategory !== lastCategory) {
+        currentPage = 1;
+        lastSearchTerm = searchTerm;
+        lastCategory = selectedCategory;
+      }
+
       const keywords = searchTerm.trim().split(/\s+/).filter(Boolean);
       const container = document.getElementById('items-container');
       container.classList.add('filtering');
@@ -773,6 +799,7 @@
       startY = e.changedTouches[0].screenY;
     });
 
+    const modalWrapper = document.querySelector('.modal-content-wrapper');
     modalWrapper.addEventListener('touchend', e => {
       endY = e.changedTouches[0].screenY;
       if (Math.abs(endY - startY) > 150 && !isDragging) {
