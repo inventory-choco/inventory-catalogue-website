@@ -40,7 +40,7 @@
       padding: 10px;
       font-size: 16px;
       border-radius: 6px;
-      border: 1px solid # locatieccc;
+      border: 1px solid #ccc;
       transition: transform 0.2s ease-in-out;
     }
     button {
@@ -465,7 +465,7 @@
       container.appendChild(clone);
       document.body.appendChild(container);
 
-      // Force style computation
+      // Force style computation for color circles
       clone.querySelectorAll('span[style*="background"]').forEach(span => {
         const computedStyle = window.getComputedStyle(span);
         span.style.background = computedStyle.background;
@@ -799,7 +799,6 @@
       startY = e.changedTouches[0].screenY;
     });
 
-    const modalWrapper = document.querySelector('.modal-content-wrapper');
     modalWrapper.addEventListener('touchend', e => {
       endY = e.changedTouches[0].screenY;
       if (Math.abs(endY - startY) > 150 && !isDragging) {
