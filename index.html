@@ -80,7 +80,7 @@
       opacity: 0;
       max-width: 300px;
       margin: 0 auto;
-      position: relative; /* For positioning screenshot button */
+      position: relative;
     }
     .item-card:hover {
       transform: translateY(-8px) scale(1.02);
@@ -110,11 +110,12 @@
       background: #ffffff;
       border: 1px solid #ccc;
       border-radius: 4px;
-      padding: 5px 10px;
-      font-size: 12px;
+      padding: 5px;
+      font-size: 14px;
       cursor: pointer;
       z-index: 10;
       transition: background 0.3s;
+      line-height: 1;
     }
     .screenshot-btn:hover {
       background: #e2e2e2;
@@ -388,7 +389,7 @@
           <h3>3. What steps can cashiers take to smoothly enter <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">flavor</a>-wise <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">item</a> <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">codes</a> in SAP CCO during busy hours?</h3>
           <p>The entry process remains the same as before—the only difference is the number of <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">item</a> <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">codes</a>. To speed things up, we’ve placed <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">item</a> <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">codes</a> directly on the wrapped chocolates and on the chocolate boxes for open <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">items</a>. This makes it easy for the cashier to scan or select the right <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">code</a>.</p>
         </div>
-        <div class="qa-section" style="animation-delay: 0.4s;">
+        <div class="qa-section" style="animation-delay:otential: 0.4s;">
           <h3>4. How should branches manage final barcode-labeled <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">items</a> differently from loose or mixed <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">items</a>?</h3>
           <p>There’s no change in the transaction process. Every <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">item</a>—whether pre-packed or loose—now has a barcode and a unique <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">item</a> <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">code</a>. Staff can process them exactly as before using the updated <a href="https://inventory-choco.github.io/inventory-catalogue-website" target="_blank">codes</a>.</p>
         </div>
@@ -505,7 +506,11 @@
     }
 
     function takeScreenshot(cardElement) {
-      html2canvas(cardElement).then(canvas => {
+      html2canvas(cardElement, {
+        scale: 2, // Increase resolution for clarity
+        useCORS: true, // Handle cross-origin images
+        backgroundColor: '#b0e0e6' // Match card background
+      }).then(canvas => {
         const link = document.createElement('a');
         link.download = `item-card-${cardElement.querySelector('h3').textContent.replace(/\s+/g, '_')}.png`;
         link.href = canvas.toDataURL('image/png');
@@ -577,7 +582,7 @@
           ? `${parseFloat(item['Weight Per Piece(In Grams)']).toFixed(2)}g`
           : 'N/A';
         card.innerHTML = `
-          <button class="screenshot-btn" onclick="takeScreenshot(this.parentElement)">📷 Screenshot</button>
+          <button class="screenshot-btn" onclick="takeScreenshot(this.parentElement)">📸</button>
           <img src="${imagePath}" loading="lazy" alt="${item['Item Description'] || 'Item'}" onerror="this.src='images/default.jpg'" onclick="openModal('${imagePath}')" oncontextmenu="return false" />
           <h3>${highlightText(item['Item Description'] || 'Unknown Item', keywords)}</h3>
           <p><strong>Item Code:</strong> ${highlightText(item['Item Code'] || 'N/A', keywords)}</p>
@@ -780,7 +785,7 @@
     modalImg.addEventListener('touchstart', startDragging);
     modalImg.addEventListener('mousemove', dragImage);
     modalImg.addEventListener('touchmove', dragImage);
-    modalImg.addEventListener('mouseup', stopDragging);
+    modalImg  modalImg.addEventListener('mouseup', stopDragging);
     modalImg.addEventListener('touchend', stopDragging);
     modalImg.addEventListener('mouseleave', stopDragging);
     modalImg.addEventListener('wheel', e => {
