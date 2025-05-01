@@ -456,57 +456,107 @@
     }
 
     function captureCard(card, itemDescription) {
-      // Create a temporary container with the same dimensions and styles as the card
+      // Create a temporary container to match the card's dimensions and styles
       const container = document.createElement('div');
-      container.style.position = 'absolute';
-      container.style.top = '-9999px';
-      container.style.left = '-9999px';
+      container.style.position = 'fixed';
+      container.style.top = '0';
+      container.style.left = '0';
       container.style.width = `${card.offsetWidth}px`;
       container.style.height = `${card.offsetHeight}px`;
-      container.style.background = window.getComputedStyle(card).background;
-      container.style.borderRadius = '10px';
-      container.style.padding = '15px';
-      container.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-      container.style.border = '1px solid #2b6cb0';
+      container.style.opacity = '0'; // Hidden from view
+      container.style.pointerEvents = 'none'; // Prevent interaction
+      container.style.zIndex = '-1'; // Behind other elements
+      container.className = 'item-card'; // Apply item-card styles
 
-      // Clone the card content (excluding the screenshot button)
+      // Clone the card content, excluding the screenshot button
       const clone = card.cloneNode(true);
       const screenshotButton = clone.querySelector('.screenshot-button');
       if (screenshotButton) screenshotButton.remove();
 
-      // Ensure all styles are computed
-      clone.querySelectorAll('span[style*="background"]').forEach(span => {
-        const computedStyle = window.getComputedStyle(span);
-        span.style.background = computedStyle.background;
-      });
+      // Ensure all styles are computed and applied
+      const computedStyle = window.getComputedStyle(card);
+      clone.style.background = computedStyle.background;
+      clone.style.border = computedStyle.border;
+      clone.style.borderRadius = computedStyle.borderRadius;
+      clone.style.padding = computedStyle.padding;
+      clone.style.boxShadow = computedStyle.boxShadow;
+      clone.style.color = computedStyle.color;
+      clone.style.textAlign = computedStyle.textAlign;
+      clone.style.opacity = '1'; // Ensure full opacity
+
+      // Explicitly set styles for child elements
       clone.querySelectorAll('img').forEach(img => {
-        img.style.width = '100%';
-        img.style.height = '180px';
-        img.style.objectFit = 'cover';
-        img.style.borderRadius = '8px';
+        const imgStyle = window.getComputedStyle(img);
+        img.style.width = imgStyle.width;
+        img.style.height = imgStyle.height;
+        img.style.objectFit = imgStyle.objectFit;
+        img.style.borderRadius = imgStyle.borderRadius;
+      });
+      clone.querySelectorAll('h3, p').forEach(text => {
+        const textStyle = window.getComputedStyle(text);
+        text.style.fontSize = textStyle.fontSize;
+        text.style.fontWeight = textStyle.fontWeight;
+        text.style.color = textStyle.color;
+        text.style.margin = textStyle.margin;
+      });
+      clone.querySelectorAll('p.category').forEach(category => {
+        category.style.color = 'red';
+      });
+      clone.querySelectorAll('span[style*="background"]').forEach(span => {
+        const spanStyle = window.getComputedStyle(span);
+        span.style.background = spanStyle.background;
+        span.style.width = spanStyle.width;
+        span.style.height = spanStyle.height;
+        span.style.borderRadius = spanStyle.borderRadius;
+        span.style.border = spanStyle.border;
+        span.style.display = spanStyle.display;
+        span.style.margin = spanStyle.margin;
+      });
+      clone.querySelectorAll('span.highlight').forEach(highlight => {
+        const highlightStyle = window.getComputedStyle(highlight);
+        highlight.style.backgroundColor = highlightStyle.backgroundColor;
+        highlight.style.fontWeight = highlightStyle.fontWeight;
+        highlight.style.color = highlightStyle.color;
       });
 
       container.appendChild(clone);
       document.body.appendChild(container);
 
-      // Force a reflow to ensure rendering
-      window.getComputedStyle(container).width;
+      // Wait for images to load before capturing
+      const images = clone.querySelectorAll('img');
+      const imagePromises = Array.from(images).map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise(resolve => {
+          img.onload = resolve;
+          img.onerror = () => {
+            img.src = 'images/default.jpg';
+            resolve();
+          };
+        });
+      });
 
-      html2canvas(container, {
-        scale: 2,
-        backgroundColor: null,
-        useCORS: true,
-        logging: false
-      }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = `${itemDescription || 'item'}_screenshot.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        document.body.removeChild(container);
-      }).catch(err => {
-        console.error('Error capturing card:', err);
-        alert('Failed to capture screenshot. Please try again.');
-        document.body.removeChild(container);
+      Promise.all(imagePromises).then(() => {
+        // Force a reflow to ensure rendering
+        container.offsetHeight;
+
+        html2canvas(container, {
+          scale: 2,
+          backgroundColor: null,
+          useCORS: true,
+          logging: false,
+          windowWidth: card.offsetWidth,
+          windowHeight: card.offsetHeight
+        }).then(canvas => {
+          const link = document.createElement('a');
+          link.download = `${itemDescription || 'item'}_screenshot.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          document.body.removeChild(container);
+        }).catch(err => {
+          console.error('Error capturing card:', err);
+          alert('Failed to capture screenshot. Please try again.');
+          document.body.removeChild(container);
+        });
       });
     }
 
