@@ -456,22 +456,48 @@
     }
 
     function captureCard(card, itemDescription) {
-      // Clone the card to a hidden container to ensure styles are computed
-      const clone = card.cloneNode(true);
+      // Create a temporary container with the same dimensions and styles as the card
       const container = document.createElement('div');
       container.style.position = 'absolute';
       container.style.top = '-9999px';
       container.style.left = '-9999px';
-      container.appendChild(clone);
-      document.body.appendChild(container);
+      container.style.width = `${card.offsetWidth}px`;
+      container.style.height = `${card.offsetHeight}px`;
+      container.style.background = window.getComputedStyle(card).background;
+      container.style.borderRadius = '10px';
+      container.style.padding = '15px';
+      container.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+      container.style.border = '1px solid #2b6cb0';
 
-      // Force style computation for color circles
+      // Clone the card content (excluding the screenshot button)
+      const clone = card.cloneNode(true);
+      const screenshotButton = clone.querySelector('.screenshot-button');
+      if (screenshotButton) screenshotButton.remove();
+
+      // Ensure all styles are computed
       clone.querySelectorAll('span[style*="background"]').forEach(span => {
         const computedStyle = window.getComputedStyle(span);
         span.style.background = computedStyle.background;
       });
+      clone.querySelectorAll('img').forEach(img => {
+        img.style.width = '100%';
+        img.style.height = '180px';
+        img.style.objectFit = 'cover';
+        img.style.borderRadius = '8px';
+      });
 
-      html2canvas(clone, { scale: 2 }).then(canvas => {
+      container.appendChild(clone);
+      document.body.appendChild(container);
+
+      // Force a reflow to ensure rendering
+      window.getComputedStyle(container).width;
+
+      html2canvas(container, {
+        scale: 2,
+        backgroundColor: null,
+        useCORS: true,
+        logging: false
+      }).then(canvas => {
         const link = document.createElement('a');
         link.download = `${itemDescription || 'item'}_screenshot.png`;
         link.href = canvas.toDataURL('image/png');
