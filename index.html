@@ -458,13 +458,12 @@
     function captureCard(card, itemDescription) {
       // Create a temporary container to match the card's dimensions and styles
       const container = document.createElement('div');
-      container.style.position = 'fixed';
+      container.style.position = 'absolute';
       container.style.top = '0';
       container.style.left = '0';
       container.style.width = `${card.offsetWidth}px`;
       container.style.height = `${card.offsetHeight}px`;
-      container.style.opacity = '0'; // Hidden from view
-      container.style.pointerEvents = 'none'; // Prevent interaction
+      container.style.visibility = 'hidden'; // Hidden from view
       container.style.zIndex = '-1'; // Behind other elements
       container.className = 'item-card'; // Apply item-card styles
 
@@ -473,31 +472,44 @@
       const screenshotButton = clone.querySelector('.screenshot-button');
       if (screenshotButton) screenshotButton.remove();
 
-      // Ensure all styles are computed and applied
+      // Copy all computed styles to ensure exact rendering
       const computedStyle = window.getComputedStyle(card);
-      clone.style.background = computedStyle.background;
-      clone.style.border = computedStyle.border;
-      clone.style.borderRadius = computedStyle.borderRadius;
-      clone.style.padding = computedStyle.padding;
-      clone.style.boxShadow = computedStyle.boxShadow;
-      clone.style.color = computedStyle.color;
-      clone.style.textAlign = computedStyle.textAlign;
+      const stylesToCopy = [
+        'background', 'border', 'borderRadius', 'padding', 'boxShadow', 'color',
+        'textAlign', 'fontSize', 'fontWeight', 'lineHeight', 'margin'
+      ];
+      stylesToCopy.forEach(prop => {
+        clone.style[prop] = computedStyle[prop];
+      });
       clone.style.opacity = '1'; // Ensure full opacity
+      clone.style.transform = 'none'; // Remove any hover transforms
+      clone.style.transition = 'none'; // Disable transitions
+      clone.style.maxWidth = '300px';
+      clone.style.margin = '0 auto';
 
       // Explicitly set styles for child elements
       clone.querySelectorAll('img').forEach(img => {
         const imgStyle = window.getComputedStyle(img);
-        img.style.width = imgStyle.width;
-        img.style.height = imgStyle.height;
-        img.style.objectFit = imgStyle.objectFit;
-        img.style.borderRadius = imgStyle.borderRadius;
+        img.style.width = '100%';
+        img.style.height = '180px';
+        img.style.objectFit = 'cover';
+        img.style.borderRadius = '8px';
+        img.style.transform = 'none';
+        img.style.transition = 'none';
       });
-      clone.querySelectorAll('h3, p').forEach(text => {
-        const textStyle = window.getComputedStyle(text);
-        text.style.fontSize = textStyle.fontSize;
-        text.style.fontWeight = textStyle.fontWeight;
-        text.style.color = textStyle.color;
-        text.style.margin = textStyle.margin;
+      clone.querySelectorAll('h3').forEach(h3 => {
+        const h3Style = window.getComputedStyle(h3);
+        h3.style.fontSize = h3Style.fontSize;
+        h3.style.fontWeight = h3Style.fontWeight;
+        h3.style.color = h3Style.color;
+        h3.style.margin = h3Style.margin;
+      });
+      clone.querySelectorAll('p').forEach(p => {
+        const pStyle = window.getComputedStyle(p);
+        p.style.fontSize = pStyle.fontSize;
+        p.style.fontWeight = pStyle.fontWeight;
+        p.style.color = pStyle.color;
+        p.style.margin = pStyle.margin;
       });
       clone.querySelectorAll('p.category').forEach(category => {
         category.style.color = 'red';
@@ -505,18 +517,18 @@
       clone.querySelectorAll('span[style*="background"]').forEach(span => {
         const spanStyle = window.getComputedStyle(span);
         span.style.background = spanStyle.background;
-        span.style.width = spanStyle.width;
-        span.style.height = spanStyle.height;
-        span.style.borderRadius = spanStyle.borderRadius;
-        span.style.border = spanStyle.border;
-        span.style.display = spanStyle.display;
-        span.style.margin = spanStyle.margin;
+        span.style.width = '36px';
+        span.style.height = '36px';
+        span.style.borderRadius = '50%';
+        span.style.border = '1px solid #ccc';
+        span.style.display = 'inline-block';
+        span.style.margin = '0 4px';
       });
       clone.querySelectorAll('span.highlight').forEach(highlight => {
         const highlightStyle = window.getComputedStyle(highlight);
-        highlight.style.backgroundColor = highlightStyle.backgroundColor;
-        highlight.style.fontWeight = highlightStyle.fontWeight;
-        highlight.style.color = highlightStyle.color;
+        highlight.style.backgroundColor = '#fef08a';
+        highlight.style.fontWeight = 'bold';
+        highlight.style.color = '#1e3a8a';
       });
 
       container.appendChild(clone);
@@ -536,27 +548,30 @@
       });
 
       Promise.all(imagePromises).then(() => {
-        // Force a reflow to ensure rendering
+        // Force a reflow and add a slight delay for rendering
         container.offsetHeight;
-
-        html2canvas(container, {
-          scale: 2,
-          backgroundColor: null,
-          useCORS: true,
-          logging: false,
-          windowWidth: card.offsetWidth,
-          windowHeight: card.offsetHeight
-        }).then(canvas => {
-          const link = document.createElement('a');
-          link.download = `${itemDescription || 'item'}_screenshot.png`;
-          link.href = canvas.toDataURL('image/png');
-          link.click();
-          document.body.removeChild(container);
-        }).catch(err => {
-          console.error('Error capturing card:', err);
-          alert('Failed to capture screenshot. Please try again.');
-          document.body.removeChild(container);
-        });
+        setTimeout(() => {
+          html2canvas(container, {
+            scale: 2,
+            backgroundColor: null,
+            useCORS: true,
+            logging: false,
+            width: card.offsetWidth,
+            height: card.offsetHeight,
+            x: 0,
+            y: 0
+          }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `${itemDescription || 'item'}_screenshot.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            document.body.removeChild(container);
+          }).catch(err => {
+            console.error('Error capturing card:', err);
+            alert('Failed to capture screenshot. Please try again.');
+            document.body.removeChild(container);
+          });
+        }, 100); // 100ms delay for rendering
       });
     }
 
