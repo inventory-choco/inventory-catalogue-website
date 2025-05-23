@@ -599,8 +599,8 @@
                   return `${displayColor} ${angleStart}deg ${angleEnd}deg`;
                 });
                 document.body.removeChild(tempDiv);
-                const gradient = conic-gradient(${colorAngles.join(', ')});
-                return <span style="display: inline-block; width: 60px; height: 60px; border-radius: 50%; background: ${gradient}; margin: 0 4px; border: 1px solid #ccc;"></span>;
+                const gradient = `conic-gradient(${colorAngles.join(', ')})`;
+                return `<span style="display: inline-block; width: 60px; height: 60px; border-radius: 50%; background: ${gradient}; margin: 0 4px; border: 1px solid #ccc;" title="${colors.join(', ')}"></span>`;
               })()
             : (() => {
                 const color = colors[0];
@@ -613,16 +613,16 @@
                 document.body.removeChild(tempDiv);
                 const isValidColor = computedColor && computedColor !== 'rgba(0, 0, 0, 0)' && computedColor !== 'transparent';
                 const displayColor = isValidColor ? normalizedColor : '#808080';
-                return <span style="display: inline-block; width: 60px; height: 60px; border-radius: 50%; background-color: ${displayColor}; margin: 0 4px; border: 1px solid #ccc;"></span>;
+                return `<span style="display: inline-block; width: 60px; height: 60px; border-radius: 50%; background-color: ${displayColor}; margin: 0 4px; border: 1px solid #ccc;" title="${color}"></span>`;
               })()
           : 'N/A';
         const flavor = item['Flavor'] || 'N/A';
         const colorText = colors.length > 0 ? colors.join(', ') : 'N/A';
         const uom = item['UOM'] || 'N/A';
         const weight = item['Weight Per Piece(In Grams)'] && !isNaN(parseFloat(item['Weight Per Piece(In Grams)']))
-          ? ${parseFloat(item['Weight Per Piece(In Grams)']).toFixed(2)}g
+          ? `${parseFloat(item['Weight Per Piece(In Grams)']).toFixed(2)}g`
           : 'N/A';
-        card.innerHTML = 
+        card.innerHTML = `
           <button class="screenshot-button" onclick="captureCard(this.parentElement, '${item['Item Description'].replace(/['"]/g, '')}')">📸</button>
           <img src="${imagePath}" loading="lazy" alt="${item['Item Description'] || 'Item'}" onerror="this.src='images/default.jpg'" onclick="openModal('${imagePath}')" oncontextmenu="return false" />
           <h3>${highlightText(item['Item Description'] || 'Unknown Item', keywords)}</h3>
