@@ -271,11 +271,15 @@
       display: none;
     }
     #pagination {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 20px;
-    }
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0; /* Adjusted margin for better spacing */
+  padding: 10px;
+  background: #f7f7f7; /* Match #controls background */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Match #controls shadow */
+  z-index: 99; /* Ensure it stays above content but below #controls */
+}
     #pagination button {
       padding: 8px 16px;
       font-size: 14px;
