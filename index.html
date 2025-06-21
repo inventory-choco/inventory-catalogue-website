@@ -624,7 +624,7 @@
         const colorText = colors.length > 0 ? colors.join(', ') : 'N/A';
         const uom = item['UOM'] || 'N/A';
         const weight = item['Weight Per Piece(In Grams)'] && !isNaN(parseFloat(item['Weight Per Piece(In Grams)']))
-          ? `${parseFloat(item['Weight Per Piece(In Grams)']).toFixed(2)}g`
+          ? `${parseFloat(item['Weight Per Piece(In Grams)']).toFixed(2)}g (May vary)`
           : 'N/A';
         card.innerHTML = `
           <button class="screenshot-button" onclick="captureCard(this.parentElement, '${item['Item Description'].replace(/['"]/g, '')}')">📸</button>
