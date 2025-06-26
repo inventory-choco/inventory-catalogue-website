@@ -202,23 +202,7 @@
       margin-bottom: 30px;
       animation: slideDown 0.8s ease-out;
     }
-	.dirham-symbol-container {
-  display: inline-block;
-  width: 20px; /* Slightly larger to ensure the symbol fits */
-  height: 20px;
-  line-height: 20px; /* Aligns content vertically */
-  text-align: center; /* Centers the symbol horizontally */
-  vertical-align: middle; /* Aligns with surrounding text */
-  margin-right: 4px; /* Adds space between symbol and price */
-  border: 1px solid #ccc; /* Optional: adds a subtle square border */
-  background: #fff; /* Optional: white background for contrast */
-}
-.dirham-symbol-container img {
-  width: 16px; /* Keep SVG size */
-  height: 16px;
-  vertical-align: middle;
-}
-    #qa-search {
+#qa-search {
       width: 100%;
       padding: 15px;
       font-size: 16px;
@@ -599,8 +583,8 @@
         const imageFile = item['Image Filename'] || 'default.jpg';
         const imagePath = `images/${imageFile}`;
         const price = item['Price'] && !isNaN(parseFloat(item['Price']))
-  ? `<span class="dirham-symbol-container"><img src="images/dirham-symbol.svg" alt="Dirham" style="width: 16px; height: 16px; vertical-align: middle;"></span> ${parseFloat(item['Price']).toFixed(2)}`
-  : `<span class="dirham-symbol-container"><img src="images/dirham-symbol.svg" alt="Dirham" style="width: 16px; height: 16px; vertical-align: middle;"></span> N/A`;
+  ? `<img src="images/dirham-symbol.svg" alt="Dirham" style="height: 1em; vertical-align: middle; background: none;"> ${parseFloat(item['Price']).toFixed(2)}`
+  : `<img src="images/dirham-symbol.svg" alt="Dirham" style="height: 1em; vertical-align: middle; background: none;"> N/A`;
         const colors = item['Color'] ? item['Color'].split(',').map(c => c.trim()) : [];
         const colorDisplay = colors.length > 0
           ? colors.length >= 2
