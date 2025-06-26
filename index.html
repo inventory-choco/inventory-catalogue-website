@@ -583,8 +583,8 @@
         const imageFile = item['Image Filename'] || 'default.jpg';
         const imagePath = `images/${imageFile}`;
         const price = item['Price'] && !isNaN(parseFloat(item['Price']))
-          ? `AED ${parseFloat(item['Price']).toFixed(2)}`
-          : 'AED N/A';
+  ? `<img src="images/dirham-symbol.svg" alt="Dirham" style="width: 16px; height: 16px; vertical-align: middle;"> ${parseFloat(item['Price']).toFixed(2)}`
+  : `<img src="images/dirham-symbol.svg" alt="Dirham" style="width: 16px; height: 16px; vertical-align: middle;"> N/A`;
         const colors = item['Color'] ? item['Color'].split(',').map(c => c.trim()) : [];
         const colorDisplay = colors.length > 0
           ? colors.length >= 2
