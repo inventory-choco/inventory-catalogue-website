@@ -582,9 +582,9 @@
         card.style.animation = `fadeInUp 0.5s ease forwards ${index * 0.1}s`;
         const imageFile = item['Image Filename'] || 'default.jpg';
         const imagePath = `images/${imageFile}`;
-        const price = item['Price'] && !isNaN(parseFloat(item['Price']))
-  ? `<img src="images/dirham-symbol.svg" alt="Dirham" style="height: 1em; vertical-align: middle; background: none;"> ${parseFloat(item['Price']).toFixed(2)}`
-  : `<img src="images/dirham-symbol.svg" alt="Dirham" style="height: 1em; vertical-align: middle; background: none;"> N/A`;
+      const price = item['Price'] && !isNaN(parseFloat(item['Price']))
+  ? `<img src="images/dirham-symbol.svg" alt="Dirham" style="width: 16px; height: 16px; vertical-align: middle;"> ${parseFloat(item['Price']).toFixed(2)}`
+  : `<img src="images/dirham-symbol.svg" alt="Dirham" style="width: 16px; height: 16px; vertical-align: middle;"> N/A`;
         const colors = item['Color'] ? item['Color'].split(',').map(c => c.trim()) : [];
         const colorDisplay = colors.length > 0
           ? colors.length >= 2
