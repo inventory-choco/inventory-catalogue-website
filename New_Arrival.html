@@ -60,6 +60,14 @@
       font-weight: bold;
       font-size: 1.4rem;
       color: #e67e22;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+    }
+    .price img {
+      height: 1.2rem;
+      vertical-align: middle;
     }
     .container {
       max-width: 1200px;
@@ -79,6 +87,9 @@
       }
       .price {
         font-size: 1.2rem;
+      }
+      .price img {
+        height: 1rem;
       }
     }
   </style>
@@ -121,7 +132,7 @@
                 <div class="card-body">
                   <h5 class="card-title">${item['Item Description']}</h5>
                   <p class="card-text">Item Code: ${item['Item Code']}</p>
-                  <p class="price">$${parseFloat(item['Price']).toFixed(2)}</p>
+                  <p class="price"><img src="dirham-symbol.svg" alt="AED"> ${parseFloat(item['Price']).toFixed(2)}</p>
                 </div>
               </div>
             `;
