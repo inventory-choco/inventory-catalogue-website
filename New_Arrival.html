@@ -19,7 +19,7 @@
       font-family: 'Playfair Display', serif;
       color: #2c3e50;
       text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 1rem;
       font-size: 3rem;
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
     }
@@ -78,6 +78,17 @@
       color: #666;
       margin: 2rem 0;
     }
+    .full-catalogue-btn {
+      font-family: 'Roboto', sans-serif;
+      font-size: 1.1rem;
+      padding: 0.5rem 1.5rem;
+      border-radius: 10px;
+      transition: background-color 0.3s ease;
+      margin-bottom: 2rem;
+    }
+    .full-catalogue-btn:hover {
+      background-color: #1a252f;
+    }
     @media (max-width: 768px) {
       .card-img-top {
         height: 300px;
@@ -97,6 +108,9 @@
 <body>
   <div class="container">
     <h1>New Arrivals Catalogue</h1>
+    <div class="text-center">
+      <button class="btn btn-dark full-catalogue-btn" onclick="window.location.href='https://inventory-choco.github.io/inventory-catalogue-website/'">See Full Catalogue</button>
+    </div>
     <div id="loading" class="loading">Loading new arrivals...</div>
     <div id="catalogue" class="row"></div>
   </div>
