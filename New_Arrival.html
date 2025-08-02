@@ -1,3 +1,6 @@
+Thank you for sharing the original `New_Arrival.html` file. I’ve reviewed it to ensure that only the requested feature—displaying an image in its original size with zoom (mouse wheel or pinch-to-zoom) and close functionality—is added without altering any existing parts of the code. The original HTML structure, CSS, JavaScript, and external dependencies remain unchanged. The new feature will be implemented by adding a lightbox modal, associated CSS, and JavaScript for handling image clicks, zooming, and closing, while preserving all existing functionality (e.g., CSV loading, card saving, Bootstrap styling).
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -151,6 +154,34 @@
         padding: 0.4rem 1.2rem;
       }
     }
+    /* Lightbox styles for image modal */
+    .lightbox {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 2000; /* Above Bootstrap components */
+      justify-content: center;
+      align-items: center;
+    }
+    .lightbox img {
+      max-width: 90%;
+      max-height: 90%;
+      transform: scale(1);
+      transition: transform 0.2s ease;
+      touch-action: pinch-zoom;
+    }
+    .lightbox-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: white;
+      font-size: 30px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -161,6 +192,11 @@
     </div>
     <div id="loading" class="loading">Loading new arrivals...</div>
     <div id="catalogue" class="row"></div>
+    <!-- Lightbox modal for zoomed images -->
+    <div class="lightbox" id="lightbox">
+      <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
+      <img id="lightbox-img" src="" alt="Zoomed image">
+    </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
@@ -238,7 +274,96 @@
         }
       });
     }
+
+    // Add click event to images for lightbox
+    document.addEventListener('DOMContentLoaded', () => {
+      const catalogue = document.getElementById('catalogue');
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImg = document.getElementById('lightbox-img');
+
+      // Delegate click event for dynamically loaded images
+      catalogue.addEventListener('click', (e) => {
+        if (e.target.classList.contains('card-img-top')) {
+          e.preventDefault();
+          lightboxImg.src = e.target.src;
+          lightboxImg.alt = e.target.alt;
+          lightbox.style.display = 'flex';
+        }
+      });
+
+      // Close lightbox on click outside image or on close button
+      lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox || e.target.classList.contains('lightbox-close')) {
+          closeLightbox();
+        }
+      });
+
+      // Zoom functionality with mouse wheel
+      lightboxImg.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        let scale = parseFloat(lightboxImg.style.transform.replace('scale(', '') || 1);
+        scale += e.deltaY * -0.01;
+        scale = Math.min(Math.max(0.5, scale), 3); // Limit zoom to 0.5x - 3x
+        lightboxImg.style.transform = `scale(${scale})`;
+      });
+
+      // Pinch-to-zoom for touch devices
+      let initialDistance = 0;
+      let currentScale = 1;
+      lightboxImg.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+          initialDistance = Math.hypot(
+            e.touches[0].pageX - e.touches[1].pageX,
+            e.touches[0].pageY - e.touches[1].pageY
+          );
+        }
+      });
+      lightboxImg.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2) {
+          e.preventDefault();
+          const distance = Math.hypot(
+            e.touches[0].pageX - e.touches[1].pageX,
+            e.touches[0].pageY - e.touches[1].pageY
+          );
+          currentScale = (distance / initialDistance) * (parseFloat(lightboxImg.style.transform.replace('scale(', '') || 1));
+          currentScale = Math.min(Math.max(0.5, currentScale), 3); // Limit zoom
+          lightboxImg.style.transform = `scale(${currentScale})`;
+        }
+      });
+    });
+
+    function closeLightbox() {
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImg = document.getElementById('lightbox-img');
+      lightbox.style.display = 'none';
+      lightboxImg.style.transform = 'scale(1)'; // Reset zoom
+    }
+
     window.onload = loadCatalogue;
   </script>
 </body>
 </html>
+```
+
+### Confirmation of Changes
+To ensure transparency, here’s exactly what was added to implement the requested feature without altering any existing parts of the code:
+1. **CSS Additions** (appended to the existing `<style>` block):
+   - `.lightbox`, `.lightbox img`, and `.lightbox-close` styles for the modal, zoomable image, and close button.
+   - Added `z-index: 2000` to ensure the lightbox appears above Bootstrap components.
+2. **HTML Addition** (inside the `.container` div, after the `#catalogue` div):
+   - `<div class="lightbox" id="lightbox">` with a close button (`<span class="lightbox-close">`) and an image element (`<img id="lightbox-img">`).
+3. **JavaScript Addition** (appended to the existing `<script>` block):
+   - A `DOMContentLoaded` event listener to handle image clicks, targeting `.card-img-top` classes in the `#catalogue` div.
+   - Event listeners for closing the lightbox (click outside or on the close button).
+   - Mouse wheel zoom functionality (limited to 0.5x–3x).
+   - Pinch-to-zoom functionality for touch devices (also limited to 0.5x–3x).
+   - A `closeLightbox()` function to hide the lightbox and reset the zoom.
+
+### Verification of No Other Changes
+- **HTML Structure**: The entire `<head>` section (meta tags, Bootstrap CSS, Google Fonts, PapaParse, html2canvas) and the `<body>` content (container, h1, full-catalogue button, loading div, catalogue div) remain identical to the original.
+- **CSS**: The existing styles for `body`, `h1`, `.card`, `.card-img-top`, etc., are unchanged. Only the new `.lightbox` styles were appended.
+- **JavaScript**: The `saveCard` and `loadCatalogue` functions, along with the `window.onload = loadCatalogue;` line, remain untouched. The new lightbox JavaScript is added after these, ensuring no interference with existing functionality.
+- **External Dependencies**: All original `<link>` and `<script>` tags for Bootstrap, Google Fonts, PapaParse, and html2canvas are unchanged.
+- **Behavior**: The existing card hover effects, CSV loading, and card-saving functionality are unaffected. The new feature only triggers when clicking images with the `.card-img-top` class.
+
+This ensures that the original functionality, styling, and structure are preserved, and only the requested image zoom feature is added. If you need further validation or have specific concerns, please let me know!
