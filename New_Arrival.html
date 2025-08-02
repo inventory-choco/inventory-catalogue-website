@@ -47,6 +47,11 @@
       padding: 3rem;
       text-align: center;
     }
+    .card-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
     .card-title {
       font-family: 'Playfair Display', serif;
       font-size: 2.4rem;
@@ -72,14 +77,14 @@
       height: 1.5rem;
       vertical-align: middle;
     }
-    .save-card-btn {
+    .save-card-btn, .export-btn, .remove-btn {
       font-family: 'Roboto', sans-serif;
       font-size: 1.1rem;
       padding: 0.5rem 1.5rem;
       border-radius: 10px;
       transition: background-color 0.3s ease;
     }
-    .save-card-btn:hover {
+    .save-card-btn:hover, .export-btn:hover, .remove-btn:hover {
       background-color: #1a252f;
     }
     .container {
@@ -107,7 +112,7 @@
       padding: 0.5rem 1.5rem;
       border-radius: 10px;
       transition: background-color 0.3s ease;
-      margin-bottom: 2rem;
+      margin-bottom: 1rem;
     }
     .full-catalogue-btn:hover {
       background-color: #1a252f;
@@ -146,7 +151,7 @@
         padding-left: 5px;
         padding-right: 5px;
       }
-      .save-card-btn {
+      .save-card-btn, .export-btn, .remove-btn {
         font-size: 1rem;
         padding: 0.4rem 1.2rem;
       }
@@ -158,14 +163,94 @@
     <h1>New Arrivals Catalogue</h1>
     <div class="text-center">
       <button class="btn btn-dark full-catalogue-btn" onclick="window.location.href='https://inventory-choco.github.io/inventory-catalogue-website/'">See Full Catalogue</button>
+      <button class="btn btn-dark export-btn" data-bs-toggle="modal" data-bs-target="#exportModal">Export</button>
+      <button class="btn btn-dark remove-btn" data-bs-toggle="modal" data-bs-target="#removeModal">Remove Card</button>
     </div>
     <div id="loading" class="loading">Loading new arrivals...</div>
     <div id="catalogue" class="row"></div>
   </div>
+
+  <!-- Export Modal -->
+  <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exportModalLabel">Add New Item</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="exportForm">
+            <div class="mb-3">
+              <label for="pin" class="form-label">PIN (DDMMYY)</label>
+              <input type="text" class="form-control" id="pin" required>
+            </div>
+            <div class="mb-3">
+              <label for="itemCode" class="form-label">Item Code</label>
+              <input type="text" class="form-control" id="itemCode" required>
+            </div>
+            <div class="mb-3">
+              <label for="itemDescription" class="form-label">Item Description</label>
+              <input type="text" class="form-control" id="itemDescription" required>
+            </div>
+            <div class="mb-3">
+              <label for="price" class="form-label">Price</label>
+              <input type="number" step="0.01" class="form-control" id="price" required>
+            </div>
+            <div class="mb-3">
+              <label for="imageFile" class="form-label">Item Image</label>
+              <input type="file" class="form-control" id="imageFile" accept="image/*" required>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-dark" onclick="submitExport()">Submit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remove Modal -->
+  <div class="modal fade" id="removeModal" tabindex="-1" aria-labelledby="removeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="removeModalLabel">Remove Card</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="removeForm">
+            <div class="mb-3">
+              <label for="removePin" class="form-label">PIN (DDMMYY)</label>
+              <input type="text" class="form-control" id="removePin" required>
+            </div>
+            <div class="mb-3">
+              <label for="removeItemCode" class="form-label">Item Code</label>
+              <input type="text" class="form-control" id="removeItemCode" required>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-dark" onclick="removeCard()">Remove</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    function getTodayPin() {
+      const today = new Date();
+      const day = String(today.getDate()).padStart(2, '0');
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const year = String(today.getFullYear()).slice(-2);
+      return `${day}${month}${year}`;
+    }
+
     function saveCard(element) {
-      html2canvas(element, { scale: 2 }).then(canvas => {
+      const content = element.querySelector('.card-content');
+      html2canvas(content, { scale: 2, useCORS: true }).then(canvas => {
         const link = document.createElement('a');
         link.download = `card-${element.querySelector('.card-title').textContent.replace(/\s+/g, '_')}.png`;
         link.href = canvas.toDataURL('image/png');
@@ -174,6 +259,60 @@
         console.error('Error saving card:', error);
         alert('Failed to save card. Please try again.');
       });
+    }
+
+    function submitExport() {
+      const pin = document.getElementById('pin').value;
+      if (pin !== getTodayPin()) {
+        alert('Invalid PIN. Use today\'s date in DDMMYY format.');
+        return;
+      }
+      const itemCode = document.getElementById('itemCode').value;
+      const itemDescription = document.getElementById('itemDescription').value;
+      const price = document.getElementById('price').value;
+      const imageFile = document.getElementById('imageFile').files[0];
+      if (!itemCode || !itemDescription || !price || !imageFile) {
+        alert('Please fill all fields and select an image.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const imageName = imageFile.name;
+        const csvRow = `"${itemCode}","${itemDescription}",${price},"${imageName}"\n`;
+        const blob = new Blob([csvRow], { type: 'text/csv' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'New_Arrivals_Updates.csv';
+        link.click();
+        alert('Item added to New_Arrivals_Updates.csv. Move the image to New_Arrivals_Images folder manually.');
+        document.getElementById('exportForm').reset();
+        document.getElementById('exportModal').querySelector('.btn-close').click();
+      };
+      reader.readAsDataURL(imageFile);
+    }
+
+    function removeCard() {
+      const pin = document.getElementById('removePin').value;
+      if (pin !== getTodayPin()) {
+        alert('Invalid PIN. Use today\'s date in DDMMYY format.');
+        return;
+      }
+      const itemCode = document.getElementById('removeItemCode').value;
+      const cards = document.querySelectorAll('.card');
+      let found = false;
+      cards.forEach(card => {
+        if (card.querySelector('.card-text').textContent.includes(itemCode)) {
+          card.closest('.col-md-3').remove();
+          found = true;
+        }
+      });
+      if (found) {
+        alert('Card removed successfully.');
+      } else {
+        alert('Item Code not found.');
+      }
+      document.getElementById('removeForm').reset();
+      document.getElementById('removeModal').querySelector('.btn-close').click();
     }
 
     function loadCatalogue() {
@@ -208,9 +347,11 @@
               <div class="card">
                 <img src="New_Arrivals_Images/${item['Image Filename']}" class="card-img-top" alt="${item['Item Description']}" onerror="this.src='https://via.placeholder.com/600x400?text=Image+Not+Found'">
                 <div class="card-body">
-                  <h5 class="card-title">${item['Item Description']}</h5>
-                  <p class="card-text">Item Code: ${item['Item Code']}</p>
-                  <p class="price"><img src="dirham-symbol.svg" alt="AED"> ${parseFloat(item['Price']).toFixed(2)}</p>
+                  <div class="card-content">
+                    <h5 class="card-title">${item['Item Description']}</h5>
+                    <p class="card-text">Item Code: ${item['Item Code']}</p>
+                    <p class="price"><img src="dirham-symbol.svg" alt="AED"> ${parseFloat(item['Price']).toFixed(2)}</p>
+                  </div>
                   <button class="btn btn-dark save-card-btn" onclick="saveCard(this.parentElement.parentElement)">Save Card</button>
                 </div>
               </div>
