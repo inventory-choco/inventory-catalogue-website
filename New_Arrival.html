@@ -38,6 +38,7 @@
       object-fit: cover;
       border-bottom: 2px solid #e0e0e0;
       transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: pointer;
     }
     .card-img-top:hover {
       transform: scale(1.05);
@@ -84,14 +85,14 @@
       height: 1.5rem;
       vertical-align: middle;
     }
-    .save-card-btn, .remove-card-btn {
+    .save-card-btn {
       font-family: 'Roboto', sans-serif;
       font-size: 1.1rem;
       padding: 0.5rem 1.5rem;
       border-radius: 10px;
       transition: background-color 0.3s ease;
     }
-    .save-card-btn:hover, .remove-card-btn:hover {
+    .save-card-btn:hover {
       background-color: #1a252f;
     }
     .container {
@@ -123,6 +124,42 @@
     }
     .full-catalogue-btn:hover {
       background-color: #1a252f;
+    }
+    .image-modal .modal-content {
+      background: transparent;
+      border: none;
+      position: relative;
+    }
+    .image-modal .modal-body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .image-modal img {
+      max-width: 100%;
+      max-height: 80vh;
+      object-fit: contain;
+      animation: zoomIn 0.3s ease;
+    }
+    .image-modal .btn-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      border-radius: 50%;
+      padding: 10px;
+      opacity: 1;
+    }
+    @keyframes zoomIn {
+      from {
+        transform: scale(0.5);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
     }
     @media (max-width: 768px) {
       .card-img-top {
@@ -161,7 +198,7 @@
         padding-left: 5px;
         padding-right: 5px;
       }
-      .save-card-btn, .remove-card-btn {
+      .save-card-btn {
         font-size: 1rem;
         padding: 0.4rem 1.2rem;
       }
@@ -176,6 +213,18 @@
     </div>
     <div id="loading" class="loading">Loading new arrivals...</div>
     <div id="catalogue" class="row"></div>
+  </div>
+
+  <!-- Image Modal -->
+  <div class="modal fade image-modal" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-body">
+          <img id="modalImage" src="" alt="Full-size image">
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -193,20 +242,11 @@
       });
     }
 
-    function removeCardPrompt(itemCode, cardElement) {
-      const pin = prompt('Enter PIN (DDMMYY) to remove item ' + itemCode);
-      if (pin === '050825') {
-        cardElement.remove();
-        const csvLine = `"${itemCode}"\n`;
-        const blob = new Blob([csvLine], { type: 'text/csv' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'Removed_Items.csv';
-        link.click();
-        alert('Card removed and added to Removed_Items.csv');
-      } else {
-        alert('Invalid PIN');
-      }
+    function showImage(src) {
+      const modalImage = document.getElementById('modalImage');
+      modalImage.src = src;
+      const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+      modal.show();
     }
 
     function loadCatalogue() {
@@ -244,7 +284,7 @@
             card.className = 'col-md-3 mb-3';
             card.innerHTML = `
               <div class="card">
-                <img src="New_Arrivals_Images/${item['Image Filename']}" class="card-img-top" alt="${item['Description-English']}" onerror="this.src='https://via.placeholder.com/600x400?text=Image+Not+Found'">
+                <img src="New_Arrivals_Images/${item['Image Filename']}" class="card-img-top" alt="${item['Description-English']}" onerror="this.src='https://via.placeholder.com/600x400?text=Image+Not+Found'" onclick="showImage('New_Arrivals_Images/${item['Image Filename']}')">
                 <div class="card-body">
                   <div class="card-content">
                     <h5 class="card-title">${item['Description-English']}</h5>
@@ -253,7 +293,6 @@
                     <p class="price"><img src="dirham-symbol.svg" alt="AED"> ${parseFloat(item['Price']).toFixed(2)}</p>
                   </div>
                   <button class="btn btn-dark save-card-btn" onclick="saveCard(this.parentElement.parentElement)">Save Card</button>
-                  <button class="btn btn-danger remove-card-btn" onclick="removeCardPrompt('${item['Item Code']}', this.parentElement.parentElement.parentElement)">Remove Card</button>
                 </div>
               </div>
             `;
