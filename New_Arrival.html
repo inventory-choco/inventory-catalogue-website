@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>New Arrivals Catalogue</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@300;400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@300;400&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
@@ -47,11 +47,23 @@
       padding: 3rem;
       text-align: center;
     }
+    .card-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
     .card-title {
       font-family: 'Playfair Display', serif;
-      font-size: 2.4rem;
+      font-size: 1.8rem;
       color: #2c3e50;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .card-description-arabic {
+      font-family: 'Amiri', serif;
+      font-size: 1.6rem;
+      color: #555;
+      margin-bottom: 0.5rem;
+      direction: rtl;
     }
     .card-text {
       font-size: 1.4rem;
@@ -72,14 +84,14 @@
       height: 1.5rem;
       vertical-align: middle;
     }
-    .save-card-btn {
+    .save-card-btn, .export-btn, .remove-card-btn {
       font-family: 'Roboto', sans-serif;
       font-size: 1.1rem;
       padding: 0.5rem 1.5rem;
       border-radius: 10px;
       transition: background-color 0.3s ease;
     }
-    .save-card-btn:hover {
+    .save-card-btn:hover, .export-btn:hover, .remove-card-btn:hover {
       background-color: #1a252f;
     }
     .container {
@@ -107,7 +119,7 @@
       padding: 0.5rem 1.5rem;
       border-radius: 10px;
       transition: background-color 0.3s ease;
-      margin-bottom: 2rem;
+      margin-bottom: 1rem;
     }
     .full-catalogue-btn:hover {
       background-color: #1a252f;
@@ -120,7 +132,10 @@
         transform: scale(1.03);
       }
       .card-title {
-        font-size: 1.8rem;
+        font-size: 1.4rem;
+      }
+      .card-description-arabic {
+        font-size: 1.2rem;
       }
       .card-text {
         font-size: 1.2rem;
@@ -146,38 +161,10 @@
         padding-left: 5px;
         padding-right: 5px;
       }
-      .save-card-btn {
+      .save-card-btn, .export-btn, .remove-card-btn {
         font-size: 1rem;
         padding: 0.4rem 1.2rem;
       }
-    }
-    /* Lightbox styles for image modal */
-    .lightbox {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      z-index: 2000; /* Above Bootstrap components */
-      justify-content: center;
-      align-items: center;
-    }
-    .lightbox img {
-      max-width: 90%;
-      max-height: 90%;
-      transform: scale(1);
-      transition: transform 0.2s ease;
-      touch-action: pinch-zoom;
-    }
-    .lightbox-close {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      color: white;
-      font-size: 30px;
-      cursor: pointer;
     }
   </style>
 </head>
@@ -186,19 +173,62 @@
     <h1>New Arrivals Catalogue</h1>
     <div class="text-center">
       <button class="btn btn-dark full-catalogue-btn" onclick="window.location.href='https://inventory-choco.github.io/inventory-catalogue-website/'">See Full Catalogue</button>
+      <button class="btn btn-dark export-btn" data-bs-toggle="modal" data-bs-target="#exportModal">Export</button>
     </div>
     <div id="loading" class="loading">Loading new arrivals...</div>
     <div id="catalogue" class="row"></div>
-    <!-- Lightbox modal for zoomed images -->
-    <div class="lightbox" id="lightbox">
-      <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
-      <img id="lightbox-img" src="" alt="Zoomed image">
+  </div>
+
+  <!-- Export Modal -->
+  <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exportModalLabel">Export Item</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="exportForm">
+            <div class="mb-3">
+              <label for="pinInput" class="form-label">Enter PIN (DDMMYY)</label>
+              <input type="text" class="form-control" id="pinInput" required>
+            </div>
+            <div class="mb-3">
+              <label for="itemCode" class="form-label">Item Code</label>
+              <input type="text" class="form-control" id="itemCode" required>
+            </div>
+            <div class="mb-3">
+              <label for="itemDescription" class="form-label">Item Description (English)</label>
+              <input type="text" class="form-control" id="itemDescription" required>
+            </div>
+            <div class="mb-3">
+              <label for="itemDescriptionArabic" class="form-label">Item Description (Arabic)</label>
+              <input type="text" class="form-control" id="itemDescriptionArabic" required>
+            </div>
+            <div class="mb-3">
+              <label for="itemPrice" class="form-label">Price</label>
+              <input type="number" step="0.01" class="form-control" id="itemPrice" required>
+            </div>
+            <div class="mb-3">
+              <label for="itemImage" class="form-label">Upload Image</label>
+              <input type="file" class="form-control" id="itemImage" accept="image/*" required>
+            </div>
+            <div class="mb-3">
+              <label for="removeItemCode" class="form-label">Remove Item (Enter Item Code)</label>
+              <input type="text" class="form-control" id="removeItemCode">
+            </div>
+            <button type="submit" class="btn btn-dark">Submit</button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     function saveCard(element) {
-      html2canvas(element, { scale: 2 }).then(canvas => {
+      const content = element.querySelector('.card-content');
+      html2canvas(content, { scale: 2, useCORS: true }).then(canvas => {
         const link = document.createElement('a');
         link.download = `card-${element.querySelector('.card-title').textContent.replace(/\s+/g, '_')}.png`;
         link.href = canvas.toDataURL('image/png');
@@ -208,6 +238,78 @@
         alert('Failed to save card. Please try again.');
       });
     }
+
+    function removeCardPrompt(itemCode, cardElement) {
+      const pin = prompt('Enter PIN (DDMMYY) to remove item ' + itemCode);
+      if (pin === '050825') {
+        cardElement.remove();
+        const csvLine = `"${itemCode}"\n`;
+        const blob = new Blob([csvLine], { type: 'text/csv' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'Removed_Items.csv';
+        link.click();
+        alert('Card removed and added to Removed_Items.csv');
+      } else {
+        alert('Invalid PIN');
+      }
+    }
+
+    document.getElementById('exportForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const pin = document.getElementById('pinInput').value;
+      if (pin !== '050825') {
+        alert('Invalid PIN');
+        return;
+      }
+
+      const itemCode = document.getElementById('itemCode').value;
+      const itemDescription = document.getElementById('itemDescription').value;
+      const itemDescriptionArabic = document.getElementById('itemDescriptionArabic').value;
+      const itemPrice = document.getElementById('itemPrice').value;
+      const itemImage = document.getElementById('itemImage').files[0];
+      const removeItemCode = document.getElementById('removeItemCode').value;
+
+      if (removeItemCode) {
+        const cardElement = document.querySelector(`.card-text:contains('${removeItemCode}')`)?.closest('.col-md-3');
+        if (cardElement) {
+          cardElement.remove();
+          const csvLine = `"${removeItemCode}"\n`;
+          const blob = new Blob([csvLine], { type: 'text/csv' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'Removed_Items.csv';
+          link.click();
+          alert('Item removed and added to Removed_Items.csv');
+        } else {
+          alert('Item Code not found');
+        }
+      }
+
+      if (itemCode && itemDescription && itemDescriptionArabic && itemPrice && itemImage) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const base64Image = event.target.result.split(',')[1];
+          const imageFilename = itemImage.name;
+          const csvLine = `"${itemCode}","${itemDescription}","${itemDescriptionArabic}",${itemPrice},"${imageFilename}"\n`;
+          const blob = new Blob([csvLine], { type: 'text/csv' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'New_Arrivals_Updates.csv';
+          link.click();
+
+          const imageLink = document.createElement('a');
+          imageLink.href = event.target.result;
+          imageLink.download = imageFilename;
+          imageLink.click();
+
+          alert('Item added to New_Arrivals_Updates.csv and image saved.');
+          document.getElementById('exportForm').reset();
+          document.getElementById('exportModal').querySelector('.btn-close').click();
+        };
+        reader.readAsDataURL(itemImage);
+      }
+    });
 
     function loadCatalogue() {
       console.log('Starting to load New_Arrivals.csv');
@@ -231,7 +333,7 @@
           const cardsPerRow = 4;
           let currentRow = [];
           results.data.forEach((item, index) => {
-            if (!item['Item Code'] || !item['Item Description'] || !item['Price'] || !item['Image Filename']) {
+            if (!item['Item Code'] || !item['Item Description-English'] || !item['Item Description-Arabic'] || !item['Price'] || !item['Image Filename']) {
               console.warn('Skipping invalid row:', item);
               return;
             }
@@ -239,12 +341,16 @@
             card.className = 'col-md-3 mb-3';
             card.innerHTML = `
               <div class="card">
-                <img src="New_Arrivals_Images/${item['Image Filename']}" class="card-img-top" alt="${item['Item Description']}" onerror="this.src='https://via.placeholder.com/600x400?text=Image+Not+Found'">
+                <img src="New_Arrivals_Images/${item['Image Filename']}" class="card-img-top" alt="${item['Item Description-English']}" onerror="this.src='https://via.placeholder.com/600x400?text=Image+Not+Found'">
                 <div class="card-body">
-                  <h5 class="card-title">${item['Item Description']}</h5>
-                  <p class="card-text">Item Code: ${item['Item Code']}</p>
-                  <p class="price"><img src="dirham-symbol.svg" alt="AED"> ${parseFloat(item['Price']).toFixed(2)}</p>
+                  <div class="card-content">
+                    <h5 class="card-title">${item['Item Description-English']}</h5>
+                    <p class="card-description-arabic">${item['Item Description-Arabic']}</p>
+                    <p class="card-text">Item Code: ${item['Item Code']}</p>
+                    <p class="price"><img src="dirham-symbol.svg" alt="AED"> ${parseFloat(item['Price']).toFixed(2)}</p>
+                  </div>
                   <button class="btn btn-dark save-card-btn" onclick="saveCard(this.parentElement.parentElement)">Save Card</button>
+                  <button class="btn btn-danger remove-card-btn" onclick="removeCardPrompt('${item['Item Code']}', this.parentElement.parentElement.parentElement)">Remove Card</button>
                 </div>
               </div>
             `;
@@ -270,70 +376,6 @@
           document.getElementById('catalogue').innerHTML = '<p class="text-danger text-center">Error loading New_Arrivals.csv: File not found or inaccessible. Check console for details.</p>';
         }
       });
-    }
-
-    // Add click event to images for lightbox
-    document.addEventListener('DOMContentLoaded', () => {
-      const catalogue = document.getElementById('catalogue');
-      const lightbox = document.getElementById('lightbox');
-      const lightboxImg = document.getElementById('lightbox-img');
-
-      // Delegate click event for dynamically loaded images
-      catalogue.addEventListener('click', (e) => {
-        if (e.target.classList.contains('card-img-top')) {
-          e.preventDefault();
-          lightboxImg.src = e.target.src;
-          lightboxImg.alt = e.target.alt;
-          lightbox.style.display = 'flex';
-        }
-      });
-
-      // Close lightbox on click outside image or on close button
-      lightbox.addEventListener('click', (e) => {
-        if (e.target === lightbox || e.target.classList.contains('lightbox-close')) {
-          closeLightbox();
-        }
-      });
-
-      // Zoom functionality with mouse wheel
-      lightboxImg.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        let scale = parseFloat(lightboxImg.style.transform.replace('scale(', '') || 1);
-        scale += e.deltaY * -0.01;
-        scale = Math.min(Math.max(0.5, scale), 3); // Limit zoom to 0.5x - 3x
-        lightboxImg.style.transform = `scale(${scale})`;
-      });
-
-      // Pinch-to-zoom for touch devices
-      let initialDistance = 0;
-      let currentScale = 1;
-      lightboxImg.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 2) {
-          initialDistance = Math.hypot(
-            e.touches[0].pageX - e.touches[1].pageX,
-            e.touches[0].pageY - e.touches[1].pageY
-          );
-        }
-      });
-      lightboxImg.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 2) {
-          e.preventDefault();
-          const distance = Math.hypot(
-            e.touches[0].pageX - e.touches[1].pageX,
-            e.touches[0].pageY - e.touches[1].pageY
-          );
-          currentScale = (distance / initialDistance) * (parseFloat(lightboxImg.style.transform.replace('scale(', '') || 1));
-          currentScale = Math.min(Math.max(0.5, currentScale), 3); // Limit zoom
-          lightboxImg.style.transform = `scale(${currentScale})`;
-        }
-      });
-    });
-
-    function closeLightbox() {
-      const lightbox = document.getElementById('lightbox');
-      const lightboxImg = document.getElementById('lightbox-img');
-      lightbox.style.display = 'none';
-      lightboxImg.style.transform = 'scale(1)'; // Reset zoom
     }
 
     window.onload = loadCatalogue;
