@@ -142,6 +142,10 @@
       object-fit: contain;
       animation: zoomIn 0.3s ease;
       transition: transform 0.2s ease;
+      cursor: grab;
+    }
+    .image-modal img.dragging {
+      cursor: grabbing;
     }
     .image-modal .btn-close {
       position: absolute;
@@ -232,10 +236,10 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     function saveCard(element) {
-      const content = element.querySelector('.card-content');
-      html2canvas(content, { scale: 2, useCORS: true }).then(canvas => {
+      const card = element.closest('.card');
+      html2canvas(card, { scale: 2, useCORS: true }).then(canvas => {
         const link = document.createElement('a');
-        link.download = `card-${element.querySelector('.card-title').textContent.replace(/\s+/g, '_')}.png`;
+        link.download = `card-${card.querySelector('.card-title').textContent.replace(/\s+/g, '_')}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
       }).catch(error => {
@@ -248,6 +252,7 @@
       const modalImage = document.getElementById('modalImage');
       modalImage.src = src;
       modalImage.style.transform = 'scale(1)';
+      modalImage.style.translate = '0 0';
       const modal = new bootstrap.Modal(document.getElementById('imageModal'));
       modal.show();
 
@@ -257,7 +262,34 @@
         event.preventDefault();
         const delta = event.deltaY > 0 ? -0.1 : 0.1;
         scale = Math.min(Math.max(0.5, scale + delta), 3);
-        modalImage.style.transform = `scale(${scale})`;
+        modalImage.style.transform = `scale(${scale}) translate(${modalImage.style.translate})`;
+      });
+
+      // Drag functionality
+      let isDragging = false;
+      let startX, startY, translateX = 0, translateY = 0;
+      modalImage.addEventListener('mousedown', function(event) {
+        if (scale > 1) {
+          isDragging = true;
+          modalImage.classList.add('dragging');
+          startX = event.clientX - translateX;
+          startY = event.clientY - translateY;
+        }
+      });
+      modalImage.addEventListener('mousemove', function(event) {
+        if (isDragging) {
+          translateX = event.clientX - startX;
+          translateY = event.clientY - startY;
+          modalImage.style.translate = `${translateX}px ${translateY}px`;
+        }
+      });
+      modalImage.addEventListener('mouseup', function() {
+        isDragging = false;
+        modalImage.classList.remove('dragging');
+      });
+      modalImage.addEventListener('mouseleave', function() {
+        isDragging = false;
+        modalImage.classList.remove('dragging');
       });
     }
 
