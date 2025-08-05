@@ -276,7 +276,7 @@
           const cardsPerRow = 4;
           let currentRow = [];
           results.data.forEach((item, index) => {
-            if (!item['Item Code'] || !item['Description-English'] || !item['Price'] || !item['Image Filename']) {
+            if (!item['Item Code'] || !item['Item Description-English'] || !item['Price'] || !item['Image Filename']) {
               console.warn('Skipping invalid row:', item);
               return;
             }
@@ -284,10 +284,10 @@
             card.className = 'col-md-3 mb-3';
             card.innerHTML = `
               <div class="card">
-                <img src="New_Arrivals_Images/${item['Image Filename']}" class="card-img-top" alt="${item['Description-English']}" onerror="this.src='https://via.placeholder.com/600x400?text=Image+Not+Found'" onclick="showImage('New_Arrivals_Images/${item['Image Filename']}')">
+                <img src="New_Arrivals_Images/${item['Image Filename']}" class="card-img-top" alt="${item['Item Description-English']}" onerror="this.src='https://via.placeholder.com/600x400?text=Image+Not+Found'" onclick="showImage('New_Arrivals_Images/${item['Image Filename']}')">
                 <div class="card-body">
                   <div class="card-content">
-                    <h5 class="card-title">${item['Description-English']}</h5>
+                    <h5 class="card-title">${item['Item Description-English']}</h5>
                     ${item['Item Description-Arabic'] ? `<p class="card-description-arabic">${item['Item Description-Arabic']}</p>` : ''}
                     <p class="card-text">Item Code: ${item['Item Code']}</p>
                     <p class="price"><img src="dirham-symbol.svg" alt="AED"> ${parseFloat(item['Price']).toFixed(2)}</p>
