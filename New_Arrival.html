@@ -130,6 +130,11 @@
       border: none;
       position: relative;
     }
+    .image-modal .modal-dialog {
+      margin: 0;
+      max-width: 100vw;
+      height: 100vh;
+    }
     .image-modal .modal-body {
       display: flex;
       justify-content: center;
@@ -137,6 +142,8 @@
       overflow: auto;
       height: 100vh;
       width: 100vw;
+      padding: 0;
+      margin: 0;
     }
     .image-modal img {
       max-width: 100vw;
@@ -329,7 +336,7 @@
           loading.style.display = 'none';
 
           if (results.errors.length > 0) {
-            catalogue.innerHTML = '<p class="text-danger text-center">Error in CSV format. Check row ' + (results.errors[0].row + 2) + ' for missing or incorrect fields.</p>';
+            catalogue.innerHTML = '<p class="text-danger text-center">Error in CSS format. Check row ' + (results.errors[0].row + 2) + ' for missing or incorrect fields.</p>';
             console.error('PapaParse errors:', results.errors);
             return;
           }
