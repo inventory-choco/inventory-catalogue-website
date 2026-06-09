@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Inventory Assessment</title>
+    <style>
+        :root {
+            --excel-green: #217346;
+            --excel-green-dark: #145333;
+            --excel-green-soft: #e7f4ec;
+            --danger: #d92d20;
+            --danger-soft: #fff1f0;
+            --success: #16803c;
+            --success-soft: #ecfdf3;
+            --warning: #b54708;
+            --warning-soft: #fff8e7;
+            --blue: #2563eb;
+            --ink: #1f2937;
+            --muted: #6b7280;
+            --line: #e5e7eb;
+            --panel: #ffffff;
+            --bg: #f4f7fb;
+            --shadow: 0 20px 60px rgba(20, 83, 51, 0.12);
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-sm: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Inter, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at top left, rgba(33, 115, 70, 0.16), transparent 32rem),
+                linear-gradient(135deg, #f7fafc 0%, #eef6f0 100%);
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        .app-shell {
+            width: min(1120px, calc(100% - 32px));
+            margin: 24px auto;
+        }
+
+        .container {
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(33, 115, 70, 0.12);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(14px);
+        }
+
+        .screen {
+            display: none;
+            animation: fadeIn 0.22s ease-in-out;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 24px;
+            min-height: 560px;
+        }
+
+        .hero-main {
+            padding: clamp(28px, 5vw, 56px);
+        }
+
+        .hero-aside {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 18px;
+            padding: clamp(28px, 4vw, 46px);
+            background: linear-gradient(160deg, var(--excel-green), var(--excel-green-dark));
+            color: #ffffff;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 18px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            color: var(--excel-green-dark);
+            background: var(--excel-green-soft);
+            font-size: 0.88rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .hero-aside .eyebrow {
+            color: #ffffff;
+            background: rgba(255,255,255,0.16);
+        }
+
+        h1,
+        h2,
+        h3 {
+            margin: 0;
+            line-height: 1.1;
+        }
+
+        h1 {
+            color: var(--excel-green-dark);
+            font-size: clamp(2rem, 5vw, 4rem);
+            letter-spacing: -0.055em;
+        }
+
+        h2 {
+            font-size: clamp(1.35rem, 3vw, 2rem);
+            letter-spacing: -0.035em;
+        }
+
+        p {
+            margin: 12px 0;
+            color: var(--muted);
+            line-height: 1.65;
+        }
+
+        .hero-aside p {
+            color: rgba(255,255,255,0.78);
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 28px 0;
+        }
+
+        .stat-card {
+            padding: 16px;
+            border: 1px solid rgba(33, 115, 70, 0.12);
+            border-radius: var(--radius-md);
+            background: #ffffff;
+        }
+
+        .stat-value {
+            display: block;
+            color: var(--excel-green-dark);
+            font-size: 1.3rem;
+            font-weight: 800;
+        }
+
+        .stat-label {
+            display: block;
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
+
+        .pin-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 24px;
+        }
+
+        input[type="password"] {
+            width: 180px;
+            padding: 14px 16px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-sm);
+            color: var(--ink);
+            background: #ffffff;
+            font-size: 1.05rem;
+            text-align: center;
+            outline: none;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="password"]:focus {
+            border-color: var(--excel-green);
+            box-shadow: 0 0 0 4px rgba(33, 115, 70, 0.14);
+        }
+
+        .pin-error {
+            display: none;
+            margin-top: 12px;
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 48px;
+            padding: 13px 22px;
+            border: 0;
+            border-radius: var(--radius-sm);
+            color: #ffffff;
+            cursor: pointer;
+            font-weight: 800;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 22px rgba(31, 41, 55, 0.14);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary { background: var(--excel-green); }
+        .btn-primary:hover { background: var(--excel-green-dark); }
+        .btn-secondary { background: #4b5563; }
+        .btn-review { background: var(--blue); }
+        .btn-danger { background: var(--danger); }
+
+        .btn-full {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .info-list {
+            display: grid;
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px;
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: var(--radius-md);
+            background: rgba(255,255,255,0.12);
+        }
+
+        .info-icon {
+            display: grid;
+            place-items: center;
+            width: 34px;
+            height: 34px;
+            flex: 0 0 auto;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.18);
+            font-weight: 900;
+        }
+
+        .quiz-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 18px 22px 16px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(12px);
+        }
+
+        .quiz-topline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .quiz-title-wrap small {
+            display: block;
+            margin-top: 5px;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .timer-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            min-width: 128px;
+            justify-content: center;
+            padding: 10px 16px;
+            border: 1px solid rgba(217, 45, 32, 0.18);
+            border-radius: 999px;
+            color: var(--danger);
+            background: var(--danger-soft);
+            font-size: 1.15rem;
+            font-weight: 900;
+        }
+
+        .timer-pill.warning {
+            border-color: rgba(181, 71, 8, 0.26);
+            color: var(--warning);
+            background: var(--warning-soft);
+        }
+
+        .progress-bar {
+            height: 10px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: #edf0f3;
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, var(--excel-green), #45b36b);
+            transition: width 0.2s ease;
+        }
+
+        .quiz-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 250px;
+            gap: 24px;
+            padding: 24px;
+        }
+
+        .question-block {
+            margin-bottom: 18px;
+            padding: 20px;
+            border: 1px solid var(--line);
+            border-left: 5px solid var(--excel-green);
+            border-radius: var(--radius-md);
+            background: #ffffff;
+            text-align: left;
+            box-shadow: 0 8px 28px rgba(31, 41, 55, 0.055);
+        }
+
+        .question-header {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            margin-bottom: 14px;
+        }
+
+        .question-number {
+            display: grid;
+            place-items: center;
+            width: 36px;
+            height: 36px;
+            flex: 0 0 auto;
+            border-radius: 12px;
+            color: #ffffff;
+            background: var(--excel-green);
+            font-weight: 900;
+        }
+
+        .question-text {
+            margin: 0;
+            color: #111827;
+            font-size: 1.03rem;
+            font-weight: 800;
+            line-height: 1.5;
+        }
+
+        .options {
+            display: grid;
+            gap: 10px;
+            padding-left: 50px;
+        }
+
+        .options label {
+            display: flex;
+            align-items: center;
+            min-height: 48px;
+            gap: 10px;
+            padding: 12px 14px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-sm);
+            background: #fbfdff;
+            cursor: pointer;
+            transition: border 0.18s ease, background 0.18s ease, transform 0.18s ease;
+        }
+
+        .options label:hover {
+            border-color: rgba(33, 115, 70, 0.35);
+            background: var(--excel-green-soft);
+            transform: translateX(2px);
+        }
+
+        .options input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            accent-color: var(--excel-green);
+        }
+
+        .answer-label {
+            color: var(--ink);
+            line-height: 1.45;
+        }
+
+        .side-panel {
+            position: sticky;
+            top: 108px;
+            align-self: start;
+            padding: 18px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-md);
+            background: #ffffff;
+            box-shadow: 0 8px 28px rgba(31, 41, 55, 0.055);
+        }
+
+        .side-panel h3 {
+            margin-bottom: 12px;
+            color: var(--excel-green-dark);
+            font-size: 1.05rem;
+        }
+
+        .mini-stats {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .mini-stat {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: #f8fafc;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .mini-stat strong {
+            color: var(--ink);
+        }
+
+        .question-nav {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .nav-dot {
+            display: grid;
+            place-items: center;
+            width: 100%;
+            aspect-ratio: 1;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            color: var(--muted);
+            background: #ffffff;
+            font-size: 0.84rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .nav-dot.answered {
+            border-color: rgba(33, 115, 70, 0.26);
+            color: var(--excel-green-dark);
+            background: var(--excel-green-soft);
+        }
+
+        .submit-card {
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 1px solid var(--line);
+        }
+
+        .submit-note {
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .result-panel {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: clamp(28px, 6vw, 58px);
+            text-align: center;
+        }
+
+        .score-ring {
+            display: grid;
+            place-items: center;
+            width: 210px;
+            height: 210px;
+            margin: 26px auto 18px;
+            border-radius: 50%;
+            background: conic-gradient(var(--excel-green) 0deg, var(--excel-green) var(--score-deg, 0deg), #edf0f3 var(--score-deg, 0deg));
+        }
+
+        .score-inner {
+            display: grid;
+            place-items: center;
+            width: 164px;
+            height: 164px;
+            border-radius: 50%;
+            background: #ffffff;
+            box-shadow: inset 0 0 0 1px var(--line);
+        }
+
+        .score {
+            color: var(--excel-green-dark);
+            font-size: 2.8rem;
+            font-weight: 900;
+            letter-spacing: -0.06em;
+        }
+
+        .score-sub {
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        .result-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 26px 0;
+        }
+
+        .review-actions {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        #review-container {
+            display: none;
+            margin-top: 34px;
+            padding-top: 26px;
+            border-top: 1px solid var(--line);
+            text-align: left;
+        }
+
+        #review-container h2 {
+            margin-bottom: 18px;
+            text-align: center;
+            color: var(--excel-green-dark);
+        }
+
+        .correct-row {
+            border-left-color: var(--success) !important;
+            background: var(--success-soft) !important;
+        }
+
+        .wrong-row {
+            border-left-color: var(--danger) !important;
+            background: var(--danger-soft) !important;
+        }
+
+        .text-success,
+        .text-danger {
+            font-weight: 900;
+        }
+
+        .text-success { color: var(--success); }
+        .text-danger { color: var(--danger); }
+
+        .answer-line {
+            margin-top: 8px;
+            line-height: 1.55;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        @media (max-width: 900px) {
+            .hero,
+            .quiz-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                min-height: auto;
+            }
+
+            .hero-aside {
+                order: -1;
+                padding: 28px;
+            }
+
+            .side-panel {
+                position: static;
+                order: -1;
+            }
+
+            .question-nav {
+                grid-template-columns: repeat(10, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .app-shell {
+                width: 100%;
+                margin: 0;
+            }
+
+            .container {
+                min-height: 100vh;
+                border: 0;
+                border-radius: 0;
+            }
+
+            .stat-grid,
+            .result-summary {
+                grid-template-columns: 1fr;
+            }
+
+            .pin-row {
+                display: grid;
+            }
+
+            input[type="password"],
+            .pin-row .btn {
+                width: 100%;
+            }
+
+            .quiz-header {
+                padding: 14px;
+            }
+
+            .quiz-topline {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .timer-pill {
+                width: 100%;
+            }
+
+            .quiz-layout {
+                padding: 14px;
+            }
+
+            .question-block {
+                padding: 16px;
+            }
+
+            .question-header {
+                gap: 10px;
+            }
+
+            .options {
+                padding-left: 0;
+            }
+
+            .question-nav {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="app-shell">
+        <section class="container" aria-live="polite">
+            <div id="pin-screen" class="screen active">
+                <div class="hero">
+                    <div class="hero-main">
+                        <span class="eyebrow">Excel Skills Test</span>
+                        <h1>Inventory Assessment</h1>
+                        <p>Enter the security PIN to unlock the assessment. The test has a fixed timer and will submit automatically when time expires.</p>
+
+                        <div class="stat-grid" aria-label="Assessment details">
+                            <div class="stat-card">
+                                <span class="stat-value">25</span>
+                                <span class="stat-label">Random questions</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-value">20 min</span>
+                                <span class="stat-label">Time limit</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-value">70%</span>
+                                <span class="stat-label">Pass mark</span>
+                            </div>
+                        </div>
+
+                        <label class="sr-only" for="pinInput">Security PIN</label>
+                        <div class="pin-row">
+                            <input type="password" id="pinInput" inputmode="numeric" autocomplete="off" placeholder="Enter PIN" aria-describedby="pinError">
+                            <button class="btn btn-primary" type="button" onclick="checkPin('start')">Unlock Test</button>
+                        </div>
+                        <div id="pinError" class="pin-error">Incorrect PIN. Please try again.</div>
+                    </div>
+
+                    <aside class="hero-aside" aria-label="Assessment rules">
+                        <span class="eyebrow">Before you start</span>
+                        <h2>Simple, focused, and timed.</h2>
+                        <div class="info-list">
+                            <div class="info-item">
+                                <span class="info-icon">1</span>
+                                <div><strong>Answer every question.</strong><br><span>Unanswered questions are counted as incorrect.</span></div>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-icon">2</span>
+                                <div><strong>Watch the timer.</strong><br><span>The paper auto-submits at 00:00.</span></div>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-icon">3</span>
+                                <div><strong>Review is protected.</strong><br><span>Detailed answers require the PIN after completion.</span></div>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+
+            <div id="start-screen" class="screen">
+                <div class="hero">
+                    <div class="hero-main">
+                        <span class="eyebrow">Ready to begin</span>
+                        <h1>Instructions</h1>
+                        <p>This assessment covers Excel basics, shortcuts, formulas, lookup functions, formatting, inventory data handling, and common errors. Every attempt randomly shows 25 questions from a 55-question question bank.</p>
+                        <div class="stat-grid">
+                            <div class="stat-card">
+                                <span class="stat-value">25</span>
+                                <span class="stat-label">Random questions shown</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-value">20:00</span>
+                                <span class="stat-label">Auto-submit timer</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-value">55</span>
+                                <span class="stat-label">Question bank</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" type="button" onclick="startTest()">Start Test Now</button>
+                    </div>
+                    <aside class="hero-aside">
+                        <span class="eyebrow">Important</span>
+                        <h2>Once started, keep this page open.</h2>
+                        <p>Each attempt loads a fresh random set of 25 questions from the full question bank. Use the question navigator to check which answers are completed.</p>
+                    </aside>
+                </div>
+            </div>
+
+            <div id="quiz-content" class="screen">
+                <header class="quiz-header">
+                    <div class="quiz-topline">
+                        <div class="quiz-title-wrap">
+                            <h2>Excel Inventory Assessment</h2>
+                            <small id="progressText">0 of 25 answered</small>
+                        </div>
+                        <div id="timer" class="timer-pill" aria-label="Time remaining">20:00</div>
+                    </div>
+                    <div class="progress-bar" aria-hidden="true">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                </header>
+
+                <form id="quizForm" class="quiz-layout">
+                    <div id="questions-container"></div>
+                    <aside class="side-panel" aria-label="Assessment progress">
+                        <h3>Progress</h3>
+                        <div class="mini-stats">
+                            <div class="mini-stat"><span>Answered</span><strong id="answeredCount">0</strong></div>
+                            <div class="mini-stat"><span>Remaining</span><strong id="remainingCount">25</strong></div>
+                        </div>
+                        <div id="questionNav" class="question-nav" aria-label="Question navigation"></div>
+                        <div class="submit-card">
+                            <p class="submit-note">Check the green boxes to confirm answered questions before submitting.</p>
+                            <button type="button" class="btn btn-primary btn-full" onclick="confirmSubmission()">Submit Test</button>
+                        </div>
+                    </aside>
+                </form>
+            </div>
+
+            <div id="result-box" class="screen">
+                <div class="result-panel">
+                    <span class="eyebrow">Assessment Complete</span>
+                    <h1>Assessment Finished</h1>
+                    <div id="scoreRing" class="score-ring" style="--score-deg: 0deg;">
+                        <div class="score-inner">
+                            <div>
+                                <div class="score" id="scoreDisplay">0 / 25</div>
+                                <div class="score-sub" id="percentageDisplay">0%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <p id="feedbackText"></p>
+                    <div class="result-summary">
+                        <div class="stat-card">
+                            <span class="stat-value" id="correctCount">0</span>
+                            <span class="stat-label">Correct</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value" id="wrongCount">0</span>
+                            <span class="stat-label">Wrong / Blank</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value" id="timeUsed">--</span>
+                            <span class="stat-label">Time used</span>
+                        </div>
+                    </div>
+                    <div class="review-actions">
+                        <button class="btn btn-review" id="reviewBtn" type="button" onclick="checkPin('review')">Review Answers</button>
+                        <button class="btn btn-secondary" type="button" onclick="checkPin('restart')">Restart Test</button>
+                    </div>
+
+                    <div id="review-container">
+                        <h2>Detailed Review</h2>
+                        <div id="review-list"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const SECURITY_PIN = "1234";
+        const TOTAL_TIME_SECONDS = 20 * 60;
+        const PASS_MARK = 0.70;
+
+        let timeLeft = TOTAL_TIME_SECONDS;
+        let timerInterval = null;
+        let userAnswers = {};
+        let testStartedAt = null;
+        let testSubmitted = false;
+
+        const QUESTION_COUNT = 25;
+        const questionBank = [
+            {"q": "How do you start a formula in Excel?", "a": "#", "b": "=", "c": ">", "correct": "b"},
+            {"q": "Which function is used to find data in the first column of a table?", "a": "SUMIF", "b": "IF", "c": "VLOOKUP", "correct": "c"},
+            {"q": "What is the shortcut to Undo?", "a": "Ctrl + Z", "b": "Ctrl + Y", "c": "Ctrl + U", "correct": "a"},
+            {"q": "Which symbol is used for an absolute cell reference?", "a": "$", "b": "&", "c": "#", "correct": "a"},
+            {"q": "=IF(A1>10, \"High\", \"Low\"). If A1 is 15, what is the result?", "a": "Low", "b": "High", "c": "15", "correct": "b"},
+            {"q": "What is the shortcut for AutoSum?", "a": "Alt + =", "b": "Ctrl + S", "c": "Shift + S", "correct": "a"},
+            {"q": "Which feature displays only rows that match a condition, such as only Apple products?", "a": "Sorting", "b": "Filtering", "c": "Merging", "correct": "b"},
+            {"q": "Which function counts cells that contain numbers?", "a": "COUNT", "b": "COUNTA", "c": "COUNTBLANK", "correct": "a"},
+            {"q": "How do you quickly auto-fit a column width?", "a": "Right-click the row", "b": "Double-click the column boundary", "c": "Press Ctrl + F", "correct": "b"},
+            {"q": "Which function calculates the arithmetic mean?", "a": "AVERAGE", "b": "SUM", "c": "TOTAL", "correct": "a"},
+            {"q": "What is the shortcut for Copy?", "a": "Ctrl + C", "b": "Ctrl + V", "c": "Ctrl + X", "correct": "a"},
+            {"q": "What is the shortcut for Paste?", "a": "Ctrl + P", "b": "Ctrl + V", "c": "Ctrl + S", "correct": "b"},
+            {"q": "To keep the top row visible while scrolling, use:", "a": "Freeze Panes", "b": "Split Screen", "c": "Hide Rows", "correct": "a"},
+            {"q": "In VLOOKUP, what does FALSE mean for the last argument?", "a": "Approximate match", "b": "Exact match", "c": "Ignore errors", "correct": "b"},
+            {"q": "What does the #DIV/0! error mean?", "a": "Wrong function name", "b": "Dividing by zero or a blank divisor", "c": "Column too narrow", "correct": "b"},
+            {"q": "Which feature changes cell color automatically based on a value?", "a": "Data Validation", "b": "Conditional Formatting", "c": "Pivot Tables", "correct": "b"},
+            {"q": "What is the shortcut to select the current data region, and often the whole sheet if used again?", "a": "Ctrl + A", "b": "Ctrl + S", "c": "Ctrl + Space", "correct": "a"},
+            {"q": "Which symbol combines text from two cells in a formula?", "a": "@", "b": "&", "c": "$", "correct": "b"},
+            {"q": "Which function returns the highest value in a range?", "a": "MIN", "b": "MAX", "c": "LARGE", "correct": "b"},
+            {"q": "What is the shortcut to Save a workbook?", "a": "Ctrl + S", "b": "Ctrl + Shift + S", "c": "Alt + S", "correct": "a"},
+            {"q": "Which feature restricts user input to a list of allowed options?", "a": "Data Validation", "b": "Filter", "c": "Protect Sheet only", "correct": "a"},
+            {"q": "What does the #VALUE! error usually mean?", "a": "The column is too narrow", "b": "A formula uses the wrong type of value, such as text in a calculation", "c": "The cell is empty", "correct": "b"},
+            {"q": "What is the shortcut for a new line inside the same cell?", "a": "Enter", "b": "Alt + Enter", "c": "Shift + Enter", "correct": "b"},
+            {"q": "Which function sums cells based on one condition?", "a": "SUM", "b": "SUMIF", "c": "COUNTIF", "correct": "b"},
+            {"q": "Where can you view and edit the full formula of the selected cell?", "a": "Status Bar", "b": "Formula Bar", "c": "Title Bar", "correct": "b"},
+            {"q": "Which function counts non-empty cells?", "a": "COUNT", "b": "COUNTA", "c": "COUNTBLANK", "correct": "b"},
+            {"q": "Which function counts cells that meet one condition?", "a": "COUNTIF", "b": "SUMIF", "c": "AVERAGE", "correct": "a"},
+            {"q": "Which function returns the lowest value in a range?", "a": "MAX", "b": "MIN", "c": "SMALL", "correct": "b"},
+            {"q": "Which Excel feature summarizes large tables by category, such as total quantity by item?", "a": "PivotTable", "b": "Spell Check", "c": "Page Break Preview", "correct": "a"},
+            {"q": "Which menu feature is commonly used to arrange data from A to Z?", "a": "Sort", "b": "Filter", "c": "Merge", "correct": "a"},
+            {"q": "Which shortcut opens Find?", "a": "Ctrl + F", "b": "Ctrl + H", "c": "Ctrl + N", "correct": "a"},
+            {"q": "Which shortcut opens Replace?", "a": "Ctrl + F", "b": "Ctrl + H", "c": "Ctrl + R", "correct": "b"},
+            {"q": "Which formula correctly adds cells A1 to A10?", "a": "=SUM(A1:A10)", "b": "=ADD(A1-A10)", "c": "SUM A1:A10", "correct": "a"},
+            {"q": "Which formula correctly calculates A1 multiplied by B1?", "a": "=A1xB1", "b": "=A1*B1", "c": "=A1#B1", "correct": "b"},
+            {"q": "Which formula correctly divides A1 by B1?", "a": "=A1/B1", "b": "=A1\\B1", "c": "=A1 DIV B1", "correct": "a"},
+            {"q": "What does ##### usually mean in a cell?", "a": "The column is not wide enough to display the value", "b": "The formula is correct", "c": "The sheet is protected", "correct": "a"},
+            {"q": "Which function removes extra spaces from text?", "a": "CLEAN", "b": "TRIM", "c": "TEXT", "correct": "b"},
+            {"q": "Which function changes text to uppercase?", "a": "UPPER", "b": "LOWER", "c": "PROPER", "correct": "a"},
+            {"q": "Which function changes text to title case, such as Product Name?", "a": "UPPER", "b": "LOWER", "c": "PROPER", "correct": "c"},
+            {"q": "Which formula joins First Name in A1 and Last Name in B1 with a space?", "a": "=A1&B1", "b": "=A1&\" \"&B1", "c": "=A1+\" \"+B1", "correct": "b"},
+            {"q": "Which Excel feature removes repeated records from a selected range or table?", "a": "Remove Duplicates", "b": "Text to Columns", "c": "Freeze Panes", "correct": "a"},
+            {"q": "Which feature splits text into separate columns using a delimiter such as comma or space?", "a": "Text to Columns", "b": "Wrap Text", "c": "Flash Fill", "correct": "a"},
+            {"q": "Which feature automatically fills a pattern based on examples you type?", "a": "Flash Fill", "b": "Goal Seek", "c": "Data Validation", "correct": "a"},
+            {"q": "Which shortcut creates a new workbook?", "a": "Ctrl + N", "b": "Ctrl + O", "c": "Ctrl + W", "correct": "a"},
+            {"q": "Which shortcut opens an existing workbook?", "a": "Ctrl + O", "b": "Ctrl + P", "c": "Ctrl + D", "correct": "a"},
+            {"q": "Which shortcut prints the workbook or opens print options?", "a": "Ctrl + P", "b": "Ctrl + F", "c": "Ctrl + B", "correct": "a"},
+            {"q": "Which shortcut cuts selected cells?", "a": "Ctrl + C", "b": "Ctrl + X", "c": "Ctrl + V", "correct": "b"},
+            {"q": "Which shortcut makes text bold?", "a": "Ctrl + B", "b": "Ctrl + I", "c": "Ctrl + U", "correct": "a"},
+            {"q": "Which function returns today’s date?", "a": "NOW()", "b": "TODAY()", "c": "DATE()", "correct": "b"},
+            {"q": "Which function returns the current date and time?", "a": "NOW()", "b": "TODAY()", "c": "TIME()", "correct": "a"},
+            {"q": "Which Excel feature is best for creating a drop-down list in a cell?", "a": "Data Validation", "b": "Conditional Formatting", "c": "Sort", "correct": "a"},
+            {"q": "In inventory data, which field usually identifies the unique product?", "a": "Item code / SKU", "b": "Cell color", "c": "Font size", "correct": "a"},
+            {"q": "Which function can return a custom message when a formula has an error?", "a": "IFERROR", "b": "ISBLANK", "c": "ROUND", "correct": "a"},
+            {"q": "Which formula checks whether A1 is blank?", "a": "=ISBLANK(A1)", "b": "=BLANK(A1)", "c": "=EMPTY(A1)", "correct": "a"},
+            {"q": "Which chart type is commonly used to compare quantities across product categories?", "a": "Column chart", "b": "Scatter chart", "c": "Radar chart", "correct": "a"},
+        ];
+        let quizData = [];
+
+        function getRandomQuestions(bank, count) {
+            return [...bank].sort(() => Math.random() - 0.5).slice(0, count);
+        }
+
+
+        function showScreen(id) {
+            document.querySelectorAll(".screen").forEach(screen => screen.classList.remove("active"));
+            document.getElementById(id).classList.add("active");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+
+        function setPinError(message = "") {
+            const error = document.getElementById("pinError");
+            if (!error) return;
+            error.textContent = message;
+            error.style.display = message ? "block" : "none";
+        }
+
+        function askForPin() {
+            return window.prompt("Enter the security PIN to proceed:");
+        }
+
+        function checkPin(mode) {
+            const pin = mode === "start" ? document.getElementById("pinInput").value.trim() : askForPin();
+
+            if (pin === SECURITY_PIN) {
+                setPinError("");
+                if (mode === "start") showScreen("start-screen");
+                if (mode === "restart") window.location.reload();
+                if (mode === "review") {
+                    document.getElementById("review-container").style.display = "block";
+                    document.getElementById("reviewBtn").style.display = "none";
+                    generateReview();
+                    document.getElementById("review-container").scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+                return;
+            }
+
+            if (mode === "start") {
+                setPinError("Incorrect PIN. Please try again.");
+                document.getElementById("pinInput").focus();
+            } else if (pin !== null) {
+                alert("Incorrect PIN.");
+            }
+        }
+
+        function startTest() {
+            quizData = getRandomQuestions(questionBank, QUESTION_COUNT);
+            userAnswers = {};
+            timeLeft = TOTAL_TIME_SECONDS;
+            testStartedAt = Date.now();
+            testSubmitted = false;
+            renderQuestions();
+            updateProgress();
+            showScreen("quiz-content");
+            startTimer();
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById("questions-container");
+            const nav = document.getElementById("questionNav");
+            container.innerHTML = "";
+            nav.innerHTML = "";
+
+            quizData.forEach((item, index) => {
+                const question = document.createElement("section");
+                question.className = "question-block";
+                question.id = `question-${index}`;
+                question.setAttribute("aria-labelledby", `question-title-${index}`);
+
+                const header = document.createElement("div");
+                header.className = "question-header";
+
+                const number = document.createElement("div");
+                number.className = "question-number";
+                number.textContent = index + 1;
+
+                const text = document.createElement("p");
+                text.className = "question-text";
+                text.id = `question-title-${index}`;
+                text.textContent = item.q;
+
+                header.append(number, text);
+
+                const options = document.createElement("div");
+                options.className = "options";
+
+                ["a", "b", "c"].forEach(key => {
+                    const label = document.createElement("label");
+                    const radio = document.createElement("input");
+                    const answerText = document.createElement("span");
+
+                    radio.type = "radio";
+                    radio.name = `q${index}`;
+                    radio.value = key;
+                    radio.addEventListener("change", () => {
+                        userAnswers[index] = key;
+                        updateProgress();
+                    });
+
+                    answerText.className = "answer-label";
+                    answerText.textContent = item[key];
+
+                    label.append(radio, answerText);
+                    options.appendChild(label);
+                });
+
+                question.append(header, options);
+                container.appendChild(question);
+
+                const dot = document.createElement("button");
+                dot.type = "button";
+                dot.className = "nav-dot";
+                dot.textContent = index + 1;
+                dot.setAttribute("aria-label", `Go to question ${index + 1}`);
+                dot.addEventListener("click", () => {
+                    document.getElementById(`question-${index}`).scrollIntoView({ behavior: "smooth", block: "center" });
+                });
+                nav.appendChild(dot);
+            });
+        }
+
+        function updateProgress() {
+            const answered = Object.values(userAnswers).filter(Boolean).length;
+            const remaining = quizData.length - answered;
+            const percent = Math.round((answered / quizData.length) * 100);
+
+            document.getElementById("answeredCount").textContent = answered;
+            document.getElementById("remainingCount").textContent = remaining;
+            document.getElementById("progressText").textContent = `${answered} of ${quizData.length} answered`;
+            document.getElementById("progressFill").style.width = `${percent}%`;
+
+            document.querySelectorAll(".nav-dot").forEach((dot, index) => {
+                dot.classList.toggle("answered", Boolean(userAnswers[index]));
+            });
+        }
+
+        function formatTime(totalSeconds) {
+            const safeSeconds = Math.max(0, totalSeconds);
+            const minutes = Math.floor(safeSeconds / 60);
+            const seconds = safeSeconds % 60;
+            return `${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            document.getElementById("timer").textContent = formatTime(timeLeft);
+
+            timerInterval = setInterval(() => {
+                timeLeft -= 1;
+                const timer = document.getElementById("timer");
+                timer.textContent = formatTime(timeLeft);
+                timer.classList.toggle("warning", timeLeft <= 120);
+
+                if (timeLeft <= 0) {
+                    calculateScore(true);
+                }
+            }, 1000);
+        }
+
+        function confirmSubmission() {
+            const answered = Object.values(userAnswers).filter(Boolean).length;
+            const remaining = quizData.length - answered;
+            const message = remaining > 0
+                ? `You still have ${remaining} unanswered question(s). Submit now?`
+                : "Submit your answers now?";
+
+            if (confirm(message)) calculateScore(false);
+        }
+
+        function calculateScore(autoSubmitted = false) {
+            if (testSubmitted) return;
+            testSubmitted = true;
+            clearInterval(timerInterval);
+
+            let score = 0;
+            quizData.forEach((item, index) => {
+                const selected = document.querySelector(`input[name="q${index}"]:checked`);
+                userAnswers[index] = selected ? selected.value : null;
+                if (selected && selected.value === item.correct) score += 1;
+            });
+
+            const total = quizData.length;
+            const percentage = Math.round((score / total) * 100);
+            const wrong = total - score;
+            const usedSeconds = testStartedAt ? Math.round((Date.now() - testStartedAt) / 1000) : TOTAL_TIME_SECONDS - timeLeft;
+            const passed = score / total >= PASS_MARK;
+
+            document.getElementById("scoreDisplay").textContent = `${score} / ${total}`;
+            document.getElementById("percentageDisplay").textContent = `${percentage}%`;
+            document.getElementById("correctCount").textContent = score;
+            document.getElementById("wrongCount").textContent = wrong;
+            document.getElementById("timeUsed").textContent = formatTime(usedSeconds);
+            document.getElementById("scoreRing").style.setProperty("--score-deg", `${Math.round((score / total) * 360)}deg`);
+            document.getElementById("feedbackText").textContent = autoSubmitted
+                ? `Time is over. ${passed ? "Passed." : "Needs Improvement."}`
+                : (passed ? "Passed. Good work." : "Needs Improvement. Please review the incorrect answers.");
+
+            showScreen("result-box");
+        }
+
+        function generateReview() {
+            const list = document.getElementById("review-list");
+            list.innerHTML = "";
+
+            quizData.forEach((item, index) => {
+                const userKey = userAnswers[index];
+                const isCorrect = userKey === item.correct;
+                const userAnsText = userKey ? item[userKey] : "No Answer";
+                const correctAnsText = item[item.correct];
+
+                const row = document.createElement("section");
+                row.className = `question-block ${isCorrect ? "correct-row" : "wrong-row"}`;
+
+                const header = document.createElement("div");
+                header.className = "question-header";
+
+                const number = document.createElement("div");
+                number.className = "question-number";
+                number.textContent = index + 1;
+
+                const question = document.createElement("p");
+                question.className = "question-text";
+                question.textContent = item.q;
+
+                header.append(number, question);
+                row.appendChild(header);
+
+                const userLine = document.createElement("div");
+                userLine.className = "answer-line";
+                userLine.innerHTML = `Your Answer: <span class="${isCorrect ? "text-success" : "text-danger"}"></span>`;
+                userLine.querySelector("span").textContent = userAnsText;
+                row.appendChild(userLine);
+
+                if (!isCorrect) {
+                    const correctLine = document.createElement("div");
+                    correctLine.className = "answer-line";
+                    correctLine.innerHTML = `Correct Answer: <span class="text-success"></span>`;
+                    correctLine.querySelector("span").textContent = correctAnsText;
+                    row.appendChild(correctLine);
+                }
+
+                list.appendChild(row);
+            });
+        }
+
+        document.getElementById("pinInput").addEventListener("keydown", event => {
+            if (event.key === "Enter") checkPin("start");
+        });
+    </script>
+</body>
+</html>
