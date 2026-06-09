@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- GOLD_THEME_V2_20260609 -->
+<!-- GOLD_THEME_V4_20260609_STRICT_PRICE_DISPLAY_AND_NEW_COLUMNS -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventory Catalogue | Gold Premium Display</title>
-  <meta name="description" content="Premium searchable product catalogue with images, product codes, categories, flavours, colours and prices." />
+  <title>Inventory Catalogue</title>
+  <meta name="description" content="Premium searchable product catalogue with images, product codes, categories, flavours and colours." />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -502,7 +502,7 @@
         <div class="brand-mark">IC</div>
         <div>
           <p class="brand-title"><strong>Inventory Catalogue</strong></p>
-          <p class="brand-subtitle">Premium product display</p>
+          <p class="brand-subtitle">Premium product gallery</p>
         </div>
       </div>
       <div class="top-actions">
@@ -515,9 +515,9 @@
   <main class="app-shell">
     <section class="hero">
       <div class="hero-card">
-        <span class="eyebrow">Premium Catalogue</span>
-        <h1>Explore products with clarity.</h1>
-        <p class="hero-text">A polished product display for branches and teams, designed for quick search, category browsing, clear product images, colours, flavours, weights and professional product cards.</p>
+        <span class="eyebrow">Premium Collection</span>
+        <h1>Explore our product collection.</h1>
+        <p class="hero-text">Browse premium products with clear images, refined collections, colours, flavours and product details presented in a clean professional view.</p>
       </div>
       <div class="stats-grid">
         <div class="stat-card"><span class="stat-label">Products</span><span class="stat-value" id="totalItems">—</span></div>
@@ -545,8 +545,6 @@
           <select class="select" id="sort-filter">
             <option value="description-asc">Name A-Z</option>
             <option value="code-asc">Product Code</option>
-            <option value="price-desc">Price High-Low</option>
-            <option value="price-asc">Price Low-High</option>
             <option value="category-asc">Collection A-Z</option>
           </select>
         </div>
@@ -561,7 +559,6 @@
 
     <div class="results-bar">
       <span id="resultSummary">Loading products...</span>
-      <button class="btn btn-small hide-mobile" onclick="clearCacheAndRefresh()">Refresh</button>
     </div>
 
     <section class="catalogue-grid" id="items-container"></section>
@@ -626,10 +623,29 @@
     function number(value) { const n = parseFloat(safe(value).replace(/,/g, '')); return Number.isFinite(n) ? n : 0; }
     function escapeAttr(value) { return safe(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
     function escapeHtml(value) { return safe(value).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[ch])); }
-    function get(item, names) { for (const name of names) { const value = safe(item[name]); if (value) return value; } return ''; }
+    function normalizeKey(key) { return safe(key).toLowerCase().replace(/[^a-z0-9]+/g, ''); }
+    function get(item, names) {
+      const wanted = names.map(normalizeKey);
+      for (const [key, value] of Object.entries(item)) {
+        if (wanted.includes(normalizeKey(key)) && safe(value)) return safe(value);
+      }
+      return '';
+    }
     function fileCode(filename) { return safe(filename).replace(/\.[^.]+$/, ''); }
-    function isTruthy(value) { return ['true','yes','y','1','show','visible'].includes(safe(value).toLowerCase()); }
-    function hasPriceDisplayColumn(item) { return Object.keys(item).some(k => k.trim().toLowerCase() === 'price display'); }
+    function isTruthy(value) {
+      const v = safe(value).toLowerCase();
+      return ['true','yes','y','1','show','visible','display'].includes(v);
+    }
+    function hasColumn(item, names) {
+      const keys = Object.keys(item).map(normalizeKey);
+      return names.map(normalizeKey).some(name => keys.includes(name));
+    }
+    function isPriceVisible(item) {
+      // Strict rule: price is displayed only when the Price Display column exists and its value is TRUE/YES/1/SHOW.
+      // FALSE, blank, missing column, and any other value will hide the price.
+      if (!hasColumn(item, ['Price Display'])) return false;
+      return isTruthy(get(item, ['Price Display']));
+    }
 
     function formatBarcode(value) {
       const raw = safe(value);
@@ -659,10 +675,10 @@
       const image = get(item, ['Image Filename', 'Image', 'Image File']);
       const description = get(item, ['Item Description', 'Item Description-English', 'Description', 'Product Name']);
       const code = get(item, ['Item Code', 'Product Code', 'Code']) || fileCode(image) || 'N/A';
-      const mainCategory = get(item, ['Main category', 'Main Category', 'Main Catgory']) || 'Finished Products';
-      const subCategory = get(item, ['Sub catgory', 'Sub category', 'Sub Category', 'Category']) || 'Uncategorized';
+      const mainCategory = get(item, ['Main category', 'Main Category', 'Main Catgory', 'Main Catagory']) || 'Uncategorized';
+      const subCategory = get(item, ['Sub catgory', 'Sub category', 'Sub Category', 'Sub Catagory', 'Category', 'Collection']) || 'Uncategorized';
       const barcode = formatBarcode(get(item, ['Barcode', 'Bar Code']));
-      const priceDisplay = hasPriceDisplayColumn(item) ? isTruthy(get(item, ['Price Display'])) : true;
+      const priceDisplay = isPriceVisible(item);
 
       return {
         ...item,
@@ -686,7 +702,9 @@
       Papa.parse(CSV_FILE, {
         download: true,
         header: true,
+        delimiter: '',
         skipEmptyLines: true,
+        transformHeader: header => String(header || '').replace(/^\uFEFF/, '').trim(),
         complete: ({ data, errors }) => {
           if (errors && errors.length) console.warn('Data warnings:', errors);
           allItems = (data || []).filter(item => get(item, ['Item Description', 'Item Description-English', 'Description', 'Product Name']) && get(item, ['Image Filename', 'Image', 'Image File'])).map(normalizeItem);
@@ -765,8 +783,6 @@
     function sortItems() {
       const mode = fields.sort.value;
       filteredItems.sort((a,b) => {
-        if (mode === 'price-desc') return b._price - a._price;
-        if (mode === 'price-asc') return a._price - b._price;
         if (mode === 'code-asc') return a._code.localeCompare(b._code, undefined, { numeric: true });
         if (mode === 'category-asc') return a._category.localeCompare(b._category) || a._description.localeCompare(b._description);
         return a._description.localeCompare(b._description);
@@ -808,14 +824,14 @@
       const swatch = makeColorSwatch(item._colour);
       const colourLabel = colourDisplayText(item._colour);
       const weight = number(item._weight) ? `${number(item._weight).toFixed(2)}g` : (safe(item._weight) || 'N/A');
-      const priceBadgeClass = item._priceDisplay ? 'price-badge' : 'price-badge hidden';
+      const priceBadge = item._priceDisplay ? `<span class="price-badge">${priceHtml(item._price)}</span>` : '';
 
       return `
         <article class="item-card">
           <div class="image-wrap">
             <button class="save-card" title="Save card" onclick="captureCard(this.closest('.item-card'), '${escapeAttr(item._code)}')">📷</button>
             <img class="product-img" loading="lazy" src="${escapeAttr(img)}" alt="${escapeAttr(item._description)}" onerror="this.src='images/default.jpg'" onclick="openModal('${escapeAttr(img)}')" oncontextmenu="return false">
-            <span class="${priceBadgeClass}">${priceHtml(item._price)}</span>
+            ${priceBadge}
           </div>
           <div class="card-body">
             <span class="category-pill" title="${escapeAttr(item._category)}">${highlight(item._category, keywords)}</span>
@@ -934,10 +950,10 @@
     fields.pageSize.addEventListener('change', () => { currentPage = 1; renderItems(fields.search.value.trim().toLowerCase().split(/\s+/).filter(Boolean)); });
     document.getElementById('resetFilters').addEventListener('click', () => {
       fields.search.value = '';
+      fields.category.value = '';
       fields.sort.value = 'description-asc';
       fields.mainCategory.value = '';
       applyDefaultMainCategory();
-      fields.category.value = '';
       currentPage = 1;
       buildCategories();
       applyFilters();
