@@ -812,6 +812,15 @@ function applyDefaultCollection() {
   });
 }
 
+function syncChips() {
+  fields.chips.querySelectorAll('.chip').forEach(chip => {
+    chip.classList.toggle(
+      'active',
+      (chip.dataset.category || '') === fields.category.value
+    );
+  });
+}
+
     function updateStats() {
       const mainItems = currentMainItems();
       document.getElementById('totalItems').textContent = mainItems.length.toLocaleString();
