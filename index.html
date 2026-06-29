@@ -595,7 +595,8 @@
     const CSV_FILE = 'inventory_data.csv';
     const IMAGE_FOLDER = 'images/';
     const AED_ICON = 'dirham-symbol.svg';
-    const DEFAULT_MAIN_CATEGORY = 'Finished Products';
+const DEFAULT_MAIN_CATEGORY = 'Finished Products';
+const DEFAULT_COLLECTION = 'ITALIAN- WRAPPED';
 
     let allItems = [];
     let filteredItems = [];
@@ -710,10 +711,11 @@
           allItems = (data || []).filter(item => get(item, ['Item Description', 'Item Description-English', 'Description', 'Product Name']) && get(item, ['Image Filename', 'Image', 'Image File'])).map(normalizeItem);
           if (!allItems.length) return showError('No products are available at the moment.');
           buildMainCategories();
-          applyDefaultMainCategory();
-          buildCategories();
-          updateStats();
-          applyFilters();
+applyDefaultMainCategory();
+buildCategories();
+applyDefaultCollection();
+updateStats();
+applyFilters();
         },
         error: () => showError('Unable to load the product catalogue.')
       });
@@ -732,6 +734,15 @@
         fields.mainCategory.value = matched;
       }
     }
+
+function applyDefaultCollection() {
+  const exists = currentMainItems().some(item => item._category.toLowerCase() === DEFAULT_COLLECTION.toLowerCase());
+
+  if (!fields.category.value && exists) {
+    const matched = currentMainItems().find(item => item._category.toLowerCase() === DEFAULT_COLLECTION.toLowerCase())._category;
+    fields.category.value = matched;
+  }
+}
 
     function currentMainItems() {
       const main = fields.mainCategory.value;
@@ -781,17 +792,25 @@
     }
 
     function sortItems() {
-      const mode = fields.sort.value;
-      filteredItems.sort((a,b) => {
-        if (mode === 'code-asc') return a._code.localeCompare(b._code, undefined, { numeric: true });
-        if (mode === 'category-asc') return a._category.localeCompare(b._category) || a._description.localeCompare(b._description);
-        return a._description.localeCompare(b._description);
-      });
+  const mode = fields.sort.value;
+
+  const naturalCompare = (x, y) => safe(x).localeCompare(safe(y), undefined, {
+    numeric: true,
+    sensitivity: 'base'
+  });
+
+  filteredItems.sort((a, b) => {
+    if (mode === 'code-asc') {
+      return naturalCompare(a._code, b._code);
     }
 
-    function syncChips() {
-      fields.chips.querySelectorAll('.chip').forEach(chip => chip.classList.toggle('active', (chip.dataset.category || '') === fields.category.value));
+    if (mode === 'category-asc') {
+      return naturalCompare(a._category, b._category) || naturalCompare(a._description, b._description);
     }
+
+    return naturalCompare(a._description, b._description) || naturalCompare(a._code, b._code);
+  });
+}
 
     function updateStats() {
       const mainItems = currentMainItems();
@@ -951,12 +970,13 @@
     document.getElementById('resetFilters').addEventListener('click', () => {
       fields.search.value = '';
       fields.category.value = '';
-      fields.sort.value = 'description-asc';
-      fields.mainCategory.value = '';
-      applyDefaultMainCategory();
-      currentPage = 1;
-      buildCategories();
-      applyFilters();
+fields.sort.value = 'description-asc';
+fields.mainCategory.value = '';
+applyDefaultMainCategory();
+currentPage = 1;
+buildCategories();
+applyDefaultCollection();
+applyFilters();
     });
 
     loadCatalogue();
